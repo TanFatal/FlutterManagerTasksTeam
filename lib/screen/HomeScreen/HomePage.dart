@@ -1,13 +1,19 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:testflutter/Widget/project/ChildProjectWidget.dart';
 import 'package:testflutter/Widget/tasks/FastTaskWidget.dart';
 import 'package:testflutter/models/ChannelModel.dart';
+import 'package:testflutter/models/ProjectModel.dart';
 import 'package:testflutter/models/TaskModel.dart';
 import 'package:testflutter/models/UserSession.dart';
 import 'package:testflutter/screen/AuthScreen/login.dart';
 import 'package:testflutter/screen/ProfileCreen/ProfilePage.dart';
 import 'package:testflutter/services/channel_api_service.dart';
+import 'package:testflutter/services/projectService.dart';
 import 'package:testflutter/services/storage/storage_service.dart';
+import 'package:testflutter/services/taskService.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +25,7 @@ class HomePage extends StatefulWidget {
 class _HomePage extends State<HomePage> {
   List<ChannelModel> channels = [];
   List<TaskModel> tasks = [];
-
+  List<ProjectModel> recentProjects = [];
   String getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -45,31 +51,59 @@ class _HomePage extends State<HomePage> {
     }
   }
 
-  Future<List<ChannelModel>> _getAllChannel() async {
-    if (UserSession.currentUser?.id != null) {
-      final channelApiService = ChannelApiService();
-      channels = await channelApiService
-          .getChannelByUserId(UserSession.currentUser!.id);
-      if (channels.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Không có nhóm nào được tìm thấy!")),
-        );
-      }
-    }
-    return channels;
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+    //_getAllChannel();
+    _getAllTaskByUserId();
   }
 
-  Future<List<TaskModel>> _getAllTaskByUserId() async {
-    if (UserSession.currentUser?.id != null) {
-      final channelApiService = ChannelApiService();
-      channels = await channelApiService
-          .getChannelByUserId(UserSession.currentUser!.id);
-      if (channels.isEmpty) {
+  void _loadProjects() async {
+    //
+    final data = await ProjectService().getAllProjectByCurrentUser();
+    if (mounted) {
+      setState(() {
+        recentProjects = data;
+      });
+
+      if (recentProjects.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Không có nhóm nào được tìm thấy!")),
+          SnackBar(content: Text("Không có dự án nào được tìm thấy!")),
         );
       }
     }
+  }
+
+  // Future<List<ChannelModel>> _getAllChannel() async {
+  //   if (UserSession.currentUser?.id != null) {
+  //     final channelApiService = ChannelApiService();
+  //     channels = await channelApiService
+  //         .getChannelByUserId(UserSession.currentUser!.id);
+  //     if (channels.isEmpty) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text("Không có nhóm nào được tìm thấy!")),
+  //       );
+  //     }
+  //   }
+  //   return channels;
+  // }
+
+  Future<List<TaskModel>> _getAllTaskByUserId() async {
+    final data = await TaskApiService().getAllTaskByCurrentUser();
+    if (mounted) {
+      setState(() {
+        tasks = data;
+        log("đây là task" + tasks.toString());
+      });
+
+      if (tasks.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Không có task nào được tìm thấy!")),
+        );
+      }
+    }
+
     return tasks;
   }
 
@@ -141,10 +175,17 @@ class _HomePage extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDateCard(),
-              //_buildSearch(),
-              // _buildRecentProjectsSection(),
+              Text(
+                'Recent Channels',
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _buildSearch(),
+              _buildRecentProjectsSection(),
               // _buildMyProgressTasksSection(),
-              //_buildTaskList(),
+              _buildTaskList(),
             ],
           ),
         ),
@@ -273,224 +314,197 @@ class _HomePage extends State<HomePage> {
     );
   }
 
-//   Widget _buildSearch() {
-//     return GestureDetector(
-//       onTap: () {
-//         Navigator.of(context).push(
-//           MaterialPageRoute(builder: (_) => const SearchScreen()),
-//         );
-//       },
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//         decoration: BoxDecoration(
-//           color: Colors.grey[100], // Màu nền nhẹ
-//           borderRadius: BorderRadius.circular(20), // Bo tròn các góc
-//         ),
-//         child: const Row(
-//           children: [
-//             Icon(
-//               Icons.search,
-//               color: Colors.blue, // Màu biểu tượng
-//               size: 24, // Kích thước biểu tượng
-//             ),
-//             SizedBox(width: 10), // Khoảng cách giữa biểu tượng và văn bản
-//             Text(
-//               'Search for people, projects, channels',
-//               style: TextStyle(
-//                 color: Colors.grey, // Màu chữ
-//                 fontSize: 14, // Kích thước chữ
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
+  Widget _buildSearch() {
+    return GestureDetector(
+      // onTap: () {
+      //   Navigator.of(context).push(
+      //     MaterialPageRoute(builder: (_) => const SearchScreen()),
+      //   );
+      // },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[100], // Màu nền nhẹ
+          borderRadius: BorderRadius.circular(20), // Bo tròn các góc
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.search,
+              color: Colors.blue, // Màu biểu tượng
+              size: 24, // Kích thước biểu tượng
+            ),
+            SizedBox(width: 10), // Khoảng cách giữa biểu tượng và văn bản
+            Text(
+              'Search for people, projects, channels',
+              style: TextStyle(
+                color: Colors.grey, // Màu chữ
+                fontSize: 14, // Kích thước chữ
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
 //   // Tạo phần Recent Projects
-//   Widget _buildRecentProjectsSection() {
-//     final projectProvider = Provider.of<ProjectProvider>(context);
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         // const Text('Recent projects',
-//         //     style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-//         // const SizedBox(height: 10),
-//         projectProvider.recentProjects.isEmpty
-//             // ? const Center(
-//             //     child: Text("Currently you have not active projects"))
-//             ? const SizedBox()
-//             : SingleChildScrollView(
-//                 scrollDirection: Axis.horizontal,
-//                 child: Column(
-//                   children: [
-//                     // const Text('Recent projects',
-//                     //     style: TextStyle(
-//                     //         fontSize: 19, fontWeight: FontWeight.bold)),
-//                     Container(
-//                       margin: const EdgeInsets.symmetric(vertical: 10),
-//                       child: Row(
-//                         children: projectProvider.recentProjects.map((project) {
-//                           return ChildProjectWidget(project: project);
-//                         }).toList(),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//       ],
-//     );
-//   }
+  Widget _buildRecentProjectsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // const Text('Recent projects',
+        //     style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        // const SizedBox(height: 10),
+        recentProjects.isEmpty
+            // ? const Center(
+            //     child: Text("Currently you have not active projects"))
+            ? const SizedBox()
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  children: [
+                    // const Text('Recent projects',
+                    //     style: TextStyle(
+                    //         fontSize: 19, fontWeight: FontWeight.bold)),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: recentProjects.map((project) {
+                          return ChildProjectWidget(project: project);
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ],
+    );
+  }
 
-//   // Tạo phần My Progress tasks
-//   Widget _buildMyProgressTasksSection() {
-//     final projectProvider = Provider.of<ProjectProvider>(context);
+  // Tạo phần My Progress tasks
+  // Widget _buildMyProgressTasksSection() {
+  //   final projectProvider = Provider.of<ProjectProvider>(context);
 
-//     // Danh sách dự án kèm tùy chọn mặc định "All"
-//     final projectList = [
-//       {'projectId': 'All', 'projectName': 'All projects'}, // Giá trị mặc định
-//       ...projectProvider.projects.map((project) => {
-//             'projectId': project.projectId,
-//             'projectName': project.projectName,
-//           }),
-//     ];
+  //   // Danh sách dự án kèm tùy chọn mặc định "All"
+  //   final projectList = [
+  //     {'projectId': 'All', 'projectName': 'All projects'}, // Giá trị mặc định
+  //     ...projectProvider.projects.map((project) => {
+  //           'projectId': project.projectId,
+  //           'projectName': project.projectName,
+  //         }),
+  //   ];
 
-//     return Row(
-//       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//       children: [
-//         Text(
-//           'Tasks ($_taskCount)', // Hiển thị số lượng nhiệm vụ
-//           style: const TextStyle(
-//             fontSize: 19,
-//             fontWeight: FontWeight.bold,
-//           ),
-//         ),
-//         Container(
-//           decoration: BoxDecoration(
-//             color: Colors.white, // Màu nền dropdown
-//             borderRadius: BorderRadius.circular(16.0), // Bo tròn dropdown
-//             // border: Border.all(
-//             //   color: Colors.grey.shade300, // Đường viền của dropdown
-//             //   //width: 1.0,
-//             // ),
-//           ),
-//           child: DropdownButton<String>(
-//             value: _selectedProjectId, // Giá trị đã chọn
-//             alignment: Alignment.centerRight,
-//             onChanged: (String? newValue) {
-//               setState(() {
-//                 _selectedProjectId = newValue!;
-//                 Provider.of<Task>(context, listen: false)
-//                     .fetchTasksInProgressMe(currentUserId, _selectedProjectId);
-//                 _loadTaskCount();
-//               });
-//             },
-//             dropdownColor: Colors.white, // Nền của dropdown
-//             underline: const SizedBox(), // Loại bỏ đường gạch chân
-//             borderRadius: BorderRadius.circular(16.0),
-//             items: projectList.map<DropdownMenuItem<String>>((project) {
-//               return DropdownMenuItem<String>(
-//                 value: project['projectId'], // Giá trị của mỗi tùy chọn
-//                 child: Container(
-//                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                   decoration: BoxDecoration(
-//                     color: Colors.transparent, // Nền trong suốt
-//                     borderRadius: BorderRadius.circular(12.0),
-//                   ),
-//                   child: Row(
-//                     mainAxisAlignment: MainAxisAlignment.start,
-//                     children: [
-//                       if (project['projectName'] != 'All projects')
-//                         const Icon(
-//                           Icons.dashboard_outlined,
-//                           color: Colors.blueAccent,
-//                         ),
-//                       const SizedBox(width: 8.0),
-//                       Text(
-//                         project['projectName']!,
-//                         style: const TextStyle(
-//                           color: Colors.black87,
-//                           fontWeight: FontWeight.w500,
-//                           fontSize: 13,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               );
-//             }).toList(),
-//           ),
-//         )
-//       ],
-//     );
-//   }
-
-//   // Tạo danh sách Task
-  // Widget _buildTaskList() {
-  //   if (tasks.isEmpty) {
-  //     return Center(
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         //crossAxisAlignment: CrossAxisAlignment.center,
-  //         children: [
-  //           const Icon(
-  //             Icons.emoji_emotions_outlined, // Icon thể hiện sự vui vẻ
-  //             size: 80,
-  //             color: Colors.blue,
-  //           ),
-  //           const SizedBox(height: 16),
-  //           Text(
-  //             'You\'re free now!',
-  //             style: TextStyle(
-  //               fontSize: 18,
-  //               fontWeight: FontWeight.bold,
-  //               color: Colors.grey[700],
-  //             ),
-  //           ),
-  //           const SizedBox(height: 8),
-  //           Text(
-  //             'No tasks assigned to you.',
-  //             textAlign: TextAlign.center,
-  //             style: TextStyle(
-  //               fontSize: 16,
-  //               color: Colors.grey[600],
-  //             ),
-  //           ),
-  //         ],
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //     children: [
+  //       Text(
+  //         'Tasks ($task)', // Hiển thị số lượng nhiệm vụ
+  //         style: const TextStyle(
+  //           fontSize: 19,
+  //           fontWeight: FontWeight.bold,
+  //         ),
   //       ),
-  //     );
-  //     // } else {
-  //     //   return Column(
-  //     //     children: taskProvider.tasksInProgressMe.map((task) {
-  //     //       return FastTaskWidget(task: task);
-  //     //     }).toList(),
-  //     //   );
-  //     // }
-  //   } else {
-  //     return FutureBuilder<List<TaskModel>>(
-  //       future: _getAllTaskByUserId(),
-  //       builder: (context, snapshot) {
-  //         if (snapshot.connectionState == ConnectionState.waiting) {
-  //           return const Center(child: CircularProgressIndicator());
-  //         } else if (snapshot.hasError) {
-  //           return Center(
-  //             child: Text('Error: ${snapshot.error}'),
-  //           );
-  //         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-  //           return const Center(child: Text('No tasks found.'));
-  //         } else {
-  //           final tasks = snapshot.data!;
-  //           return ListView.builder(
-  //             shrinkWrap: true,
-  //             physics: const NeverScrollableScrollPhysics(),
-  //             itemCount: tasks.length,
-  //             itemBuilder: (context, index) {
-  //               return FastTaskWidget(task: tasks[index]);
-  //             },
-  //           );
-  //         }
-  //       },
-  //     );
-  //   }
+  //       Container(
+  //         decoration: BoxDecoration(
+  //           color: Colors.white, // Màu nền dropdown
+  //           borderRadius: BorderRadius.circular(16.0), // Bo tròn dropdown
+  //           // border: Border.all(
+  //           //   color: Colors.grey.shade300, // Đường viền của dropdown
+  //           //   //width: 1.0,
+  //           // ),
+  //         ),
+  //         child: DropdownButton<String>(
+  //           value: _selectedProjectId, // Giá trị đã chọn
+  //           alignment: Alignment.centerRight,
+  //           onChanged: (String? newValue) {
+  //             setState(() {
+  //               _selectedProjectId = newValue!;
+  //               Provider.of<Task>(context, listen: false)
+  //                   .fetchTasksInProgressMe(currentUserId, _selectedProjectId);
+  //               _loadTaskCount();
+  //             });
+  //           },
+  //           dropdownColor: Colors.white, // Nền của dropdown
+  //           underline: const SizedBox(), // Loại bỏ đường gạch chân
+  //           borderRadius: BorderRadius.circular(16.0),
+  //           items: projectList.map<DropdownMenuItem<String>>((project) {
+  //             return DropdownMenuItem<String>(
+  //               value: project['projectId'], // Giá trị của mỗi tùy chọn
+  //               child: Container(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.transparent, // Nền trong suốt
+  //                   borderRadius: BorderRadius.circular(12.0),
+  //                 ),
+  //                 child: Row(
+  //                   mainAxisAlignment: MainAxisAlignment.start,
+  //                   children: [
+  //                     if (project['projectName'] != 'All projects')
+  //                       const Icon(
+  //                         Icons.dashboard_outlined,
+  //                         color: Colors.blueAccent,
+  //                       ),
+  //                     const SizedBox(width: 8.0),
+  //                     Text(
+  //                       project['projectName']!,
+  //                       style: const TextStyle(
+  //                         color: Colors.black87,
+  //                         fontWeight: FontWeight.w500,
+  //                         fontSize: 13,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             );
+  //           }).toList(),
+  //         ),
+  //       )
+  //     ],
+  //   );
   // }
+
+  // Tạo danh sách Task
+  Widget _buildTaskList() {
+    if (tasks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(
+              Icons.emoji_emotions_outlined,
+              size: 80,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'You\'re free now!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'No tasks assigned to you.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return ListView.builder(
+        itemCount: tasks.length,
+        shrinkWrap: true, // 👈 Cho phép co lại trong Column
+        physics:
+            NeverScrollableScrollPhysics(), // 👈 Vô hiệu cuộn riêng của list
+        itemBuilder: (context, index) {
+          return FastTaskWidget(task: tasks[index]);
+        },
+      );
+    }
+  }
 }

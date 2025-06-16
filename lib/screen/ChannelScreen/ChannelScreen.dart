@@ -402,7 +402,7 @@ class _ChannelScreen extends State<ChannelScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                       builder: (_) =>
-                          InformationGroup(channel: widget.channel)),
+                          InformationChannel(channel: widget.channel)),
                 );
               },
             ),

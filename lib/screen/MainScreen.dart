@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:testflutter/screen/ChannelScreen/ChannelPage.dart';
 import 'package:testflutter/screen/HomeScreen/HomePage.dart';
+import 'package:testflutter/screen/ProjectScreen/ListProjectScreen.dart';
 import 'package:testflutter/screen/ProjectScreen/ProjectPage.dart';
 import 'package:testflutter/screen/chat/ChatPage.dart';
 
@@ -13,7 +14,7 @@ class Mainscreen extends StatefulWidget {
 
 final List<Widget> _screens = [
   HomePage(),
-  ProjectPage(),
+  ListProjectScreen(),
   ChannelPage(),
   ChatPage(),
 ];

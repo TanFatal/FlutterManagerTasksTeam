@@ -36,6 +36,23 @@ class AuthApiService extends DioService {
     }
   }
 
+  Future<String?> RefreshLogin(String refreshToken) async {
+    var response = await apiService.postData(baseUrl + ApiConfig.refreshToken, {
+      'username': refreshToken,
+    });
+    if (response != null && response.statusCode == 200) {
+      String accCessToken = response.data['accessToken'];
+      await StorageService.saveTokens(accCessToken, refreshToken);
+      log("accessToken: $accCessToken /n" +
+          " và /n"
+              "refreshToken: $refreshToken");
+      return accCessToken;
+    } else {
+      log("Đăng nhập thất bại");
+      return null;
+    }
+  }
+
   Future<String> signUp(String email, String password, String fullname) async {
     var response =
         await apiService.postData(baseUrl + ApiConfig.emailRegister, {
@@ -55,9 +72,22 @@ class AuthApiService extends DioService {
     }
   }
 
-  Future<Response?> getData(String endpoint) async {
+  Future<Response?> getCurrentUser(String endpoint) async {
     try {
       final response = await apiService.getData(baseUrl + "/" + endpoint);
+      return response;
+    } catch (e) {
+      log("Lỗi GET: $e");
+      return null;
+    }
+  }
+
+  Future<Response?> forgotPassWord(String email) async {
+    try {
+      var response =
+          await apiService.putData(baseUrl + ApiConfig.forgotPassWord, {
+        'email': email,
+      });
       return response;
     } catch (e) {
       log("Lỗi GET: $e");
@@ -68,5 +98,21 @@ class AuthApiService extends DioService {
   Future<void> logout() async {
     await StorageService.clearTokens();
     print("Đã đăng xuất và xóa token");
+  }
+
+  Future<String> getUserNameById(int userId) async {
+    try {
+      Response? response = await apiService
+          .getData(baseUrl + ApiConfig.users + "/id/" + userId.toString());
+      if (response != null && response.statusCode == 200) {
+        return response.data['fullname'];
+      } else {
+        log("Lấy tên người dùng thất bại!");
+        return "Unknown User";
+      }
+    } catch (e) {
+      log("Lỗi khi lấy tên người dùng: $e");
+      return "Unknown User";
+    }
   }
 }

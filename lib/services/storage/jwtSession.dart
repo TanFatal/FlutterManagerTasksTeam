@@ -25,7 +25,7 @@ class JwtAndSession {
     //đã lấy được ID của token
 
     try {
-      Response? res = await authService.getData('users/id/$userId');
+      Response? res = await authService.getCurrentUser('users/id/$userId');
 
       if (res != null && res.statusCode == 200) {
         UserSession.currentUser = User.fromJson(res.data);

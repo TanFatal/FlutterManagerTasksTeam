@@ -34,10 +34,12 @@ class ApiConfig {
   static const String message = '/users/message';
   static const String channel = '/users/channel';
   static const String activityLog = '/users/activitylog';
-
+  
   //auth
   static const String emailLogin = '/auth/login';
+  static const String refreshToken = '/auth/refresh';
   static const String emailRegister = '/auth/register';
+  static const String forgotPassWord = '/auth/forgot/password';
   // Method to get token from secure storage
   static Future<String?> getToken() async {
     // Implement token retrieval from secure storage

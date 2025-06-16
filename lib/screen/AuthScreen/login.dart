@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:testflutter/models/UserSession.dart';
 import 'package:testflutter/models/user.dart';
+import 'package:testflutter/screen/AuthScreen/forgot.dart';
 import 'package:testflutter/screen/AuthScreen/register.dart';
 import 'package:testflutter/screen/MainScreen.dart';
 import 'package:testflutter/services/auth_api_service.dart';
@@ -48,7 +49,6 @@ class _LoginScreen extends State<LoginScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +153,26 @@ class _LoginScreen extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        _gap(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const ResetPasswordScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Forgot password ?",
+                                style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
                         CheckboxListTile(
                           value: _rememberMe,
                           onChanged: (value) {
@@ -167,7 +186,6 @@ class _LoginScreen extends State<LoginScreen> {
                           dense: true,
                           contentPadding: const EdgeInsets.all(0),
                         ),
-                        _gap(),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
