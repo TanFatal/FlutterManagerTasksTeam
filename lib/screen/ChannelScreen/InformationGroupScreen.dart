@@ -5,15 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:testflutter/models/ChannelModel.dart';
 import 'package:testflutter/models/UserSession.dart';
 
-class InformationGroup extends StatefulWidget {
+class InformationChannel extends StatefulWidget {
   final ChannelModel channel;
-  const InformationGroup({super.key, required this.channel});
+  const InformationChannel({super.key, required this.channel});
 
   @override
-  State<InformationGroup> createState() => _InformationGroupState();
+  State<InformationChannel> createState() => _InformationChannelState();
 }
 
-class _InformationGroupState extends State<InformationGroup> {
+class _InformationChannelState extends State<InformationChannel> {
   Color getColorFromCreatedAt(DateTime createdAt) {
     // Danh sách 7 màu sắc cầu vồng
     final List<Color> rainbowColors = [
