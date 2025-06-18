@@ -16,7 +16,8 @@ class ApiService {
   ))
     ..interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await StorageService.getAccessToken(); // giả sử bạn có hàm này
+        final token =
+            await StorageService.getAccessToken(); // giả sử bạn có hàm này
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
@@ -27,37 +28,47 @@ class ApiService {
 
         // Nếu là lỗi 401 thì thử refresh token
         if (e.response?.statusCode == 401) {
+          log("401 ERROR DETECTED - Attempting token refresh");
           final refreshToken = await StorageService.getRefreshToken();
 
           if (refreshToken != null) {
             try {
-              final refreshResponse = await dio.post(
-                '/auth/refresh',
-                options: Options(
-                  headers: {
-                    'Authorization': 'Bearer $refreshToken',
-                  },
-                ),
-              );
+              // ⚠️ Tạo Dio instance riêng KHÔNG có interceptor để tránh infinite loop
+              final refreshDio = Dio(BaseOptions(
+                baseUrl: ApiConfig.baseUrl,
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+              ));
+
+              log("Calling refresh token API with token: ${refreshToken.substring(0, 10)}...");
+              final refreshResponse = await refreshDio
+                  .post('/auth/refresh', data: {"refreshToken": refreshToken});
 
               final newAccessToken = refreshResponse.data['accessToken'];
-              final newRefreshToken = refreshResponse.data['refreshToken'] ?? refreshToken;
+              final newRefreshToken =
+                  refreshResponse.data['refreshToken'] ?? refreshToken;
 
               // Lưu lại token mới
               await StorageService.saveTokens(newAccessToken, newRefreshToken);
+              log("✅ Token refresh successful! New token saved.");
 
-              // Gửi lại request cũ
+              // Gửi lại request cũ với token mới
               final retryRequest = e.requestOptions;
               retryRequest.headers['Authorization'] = 'Bearer $newAccessToken';
 
+              log("🔄 Retrying original request with new token...");
               final response = await dio.fetch(retryRequest);
+              log("✅ Original request successful after token refresh!");
               return handler.resolve(response);
             } catch (refreshError) {
-              log("REFRESH TOKEN FAILED: $refreshError");
+              log("❌ REFRESH TOKEN FAILED: $refreshError");
               await StorageService.clearTokens();
-              // Optionally navigate to login screen here
+              log("🔐 Tokens cleared - user needs to login again");
               return handler.next(e);
             }
+          } else {
+            log("❌ No refresh token available - user needs to login");
+            await StorageService.clearTokens();
           }
         }
 
