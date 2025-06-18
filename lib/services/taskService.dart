@@ -16,7 +16,7 @@ class TaskApiService extends DioService {
   Future<List<TaskModel>> getAllTaskByCurrentUser() async {
     try {
       Response? response = await apiService.getData(baseUrl + ApiConfig.task);
-
+      log("đang lấy task");
       if (response != null && response.statusCode == 200) {
         final List<dynamic> jsonData = response.data;
         List<TaskModel> listTask = jsonData.map((item) {

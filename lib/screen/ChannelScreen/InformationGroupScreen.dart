@@ -2,8 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:testflutter/Widget/avatar/InitialsAvatar.dart';
 import 'package:testflutter/models/ChannelModel.dart';
 import 'package:testflutter/models/UserSession.dart';
+import 'package:testflutter/screen/ChannelScreen/AddMemberScreen.dart';
+import 'package:testflutter/screen/HomeScreen/HomePage.dart';
+import 'package:testflutter/services/auth_api_service.dart';
+import 'package:testflutter/services/channel_api_service.dart';
 
 class InformationChannel extends StatefulWidget {
   final ChannelModel channel;
@@ -31,6 +36,36 @@ class _InformationChannelState extends State<InformationChannel> {
     return rainbowColors[index];
   }
 
+  void deleteChannel(int channelId) async {
+    try {
+      await ChannelApiService().deleteChannel(channelId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Channel deleted successfully.")),
+      );
+      Navigator.pop(context); // Quay lại trang trước đó
+    } catch (e) {
+      print("Error deleting channel: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete channel.")),
+      );
+    }
+  }
+
+  void leaveChannel(int channelId) async {
+    try {
+      await ChannelApiService().leaveChannel(channelId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("You have left the channel.")),
+      );
+      Navigator.pop(context); // Quay lại trang trước đó
+    } catch (e) {
+      print("Error leaving channel: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to leave the channel.")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,17 +86,15 @@ class _InformationChannelState extends State<InformationChannel> {
         actions: [
           if (UserSession.currentUser?.id == widget.channel.adminId)
             IconButton(
-              // onPressed: () {
-              //   Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //         builder: (context) =>
-              //             AddMemberScreen(members: widget.channel.memberIds)),
-              //   );
-              // },
-              icon: Icon(Icons.person_add_alt, color: Colors.blue),
-              onPressed: () {},
-            )
+                onPressed: () {
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //       builder: (context) =>
+                  //           AddMemberScreen(members: widget.channel.memberIds)),
+                  // );
+                },
+                icon: Icon(Icons.person_add_alt, color: Colors.blue))
         ],
       ),
       body: Container(
@@ -151,122 +184,129 @@ class _InformationChannelState extends State<InformationChannel> {
                 lists: widget.channel.memberIds,
                 isProject: false,
               ),
-              // Project Information
+              //Project Information
               // _buildListInfoTile(
               //   icon: Icons.dashboard_outlined,
               //   title: 'Projects',
-              //   lists: widget.channel.projectIds,
+              //   lists: widget.channel.channelId,
               //   isProject: true,
               // ),
-              // Created At Information
+              //Created At Information
               _buildInfoTile(
                   icon: Icons.timeline_outlined,
                   title: 'Created at',
                   content:
                       DateFormat('dd/M/yyyy').format(widget.channel.createAt)),
               const SizedBox(height: 30),
-              // Delete Group Button
-              // Center(
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.stretch,
-              //     children: [
-              //       ElevatedButton(
-              //         onPressed: () {
-              //           showDialog(
-              //             context: context,
-              //             builder: (BuildContext context) {
-              //               return AlertDialog(
-              //                 title: Text("Confirm leaving"),
-              //                 content: Text(
-              //                     "Do you want to definitely leave the group ?"),
-              //                 actions: [
-              //                   TextButton(
-              //                     onPressed: () {
-              //                       Navigator.of(context).pop(); // Đóng dialog
-              //                     },
-              //                     child: Text("Cancel"),
-              //                   ),
-              //                   TextButton(
-              //                     onPressed: () {
-              //                       Navigator.of(context).pop(); // Đóng dialog
-              //                       // Thêm logic xóa group ở đây
-              //                       ScaffoldMessenger.of(context).showSnackBar(
-              //                         SnackBar(content: Text("Group deleted!")),
-              //                       );
-              //                     },
-              //                     child: Text("Agree"),
-              //                   ),
-              //                 ],
-              //               );
-              //             },
-              //           );
-              //         },
-              //         style: ElevatedButton.styleFrom(
-              //           backgroundColor: Colors.blue,
-              //           padding: const EdgeInsets.symmetric(
-              //               horizontal: 24, vertical: 12),
-              //           shape: RoundedRectangleBorder(
-              //             borderRadius: BorderRadius.circular(30),
-              //           ),
-              //         ),
-              //         child: const Text(
-              //           'Leave Group',
-              //           style: TextStyle(fontSize: 16, color: Colors.white),
-              //         ),
-              //       ),
-              //       const SizedBox(height: 10),
-              //       if (currentUser.userId == widget.channel.adminId)
-              //         ElevatedButton(
-              //           onPressed: () {
-              //             showDialog(
-              //               context: context,
-              //               builder: (BuildContext context) {
-              //                 return AlertDialog(
-              //                   title: Text("Confirm deletion"),
-              //                   content: Text(
-              //                       "If you delete this group, the chat and related projects will also be deleted ?"),
-              //                   actions: [
-              //                     TextButton(
-              //                       onPressed: () {
-              //                         Navigator.of(context)
-              //                             .pop(); // Đóng dialog
-              //                       },
-              //                       child: Text("Cancel"),
-              //                     ),
-              //                     TextButton(
-              //                       onPressed: () {
-              //                         Navigator.of(context)
-              //                             .pop(); // Đóng dialog
-              //                         // Thêm logic xóa group ở đây
-              //                         ScaffoldMessenger.of(context)
-              //                             .showSnackBar(
-              //                           SnackBar(
-              //                               content: Text("Group deleted!")),
-              //                         );
-              //                       },
-              //                       child: Text("Agree"),
-              //                     ),
-              //                   ],
-              //                 );
-              //               },
-              //             );
-              //           },
-              //           style: ElevatedButton.styleFrom(
-              //             backgroundColor: Colors.red,
-              //             padding: const EdgeInsets.symmetric(
-              //                 horizontal: 24, vertical: 12),
-              //             shape: RoundedRectangleBorder(
-              //               borderRadius: BorderRadius.circular(30),
-              //             ),
-              //           ),
-              //           child: const Text(
-              //             'Delete Group',
-              //             style: TextStyle(fontSize: 16, color: Colors.white),
-              //           ),
-              //         ),
-              //     ],
-              //   ),
-              // ),
+              //Delete Group Button
+              Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text("Confirm leaving"),
+                              content: Text(
+                                  "Do you want to definitely leave the group ?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // Đóng dialog
+                                  },
+                                  child: Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                HomePage())); // Đóng dialog
+                                    leaveChannel(widget.channel.channelId);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("Leaved Groud!")),
+                                    );
+                                  },
+                                  child: Text("Agree"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text(
+                        'Leave Group',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (UserSession.currentUser?.id == widget.channel.adminId)
+                      ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text("Confirm deletion"),
+                                content: Text(
+                                    "If you delete this group, the chat and related projects will also be deleted ?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context)
+                                          .pop(); // Đóng dialog
+                                    },
+                                    child: Text("Cancel"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  HomePage())); // Đóng dialog
+                                      deleteChannel(widget.channel.channelId);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text("Group deleted!")),
+                                      );
+                                    },
+                                    child: Text("Agree"),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete Group',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -281,7 +321,6 @@ class _InformationChannelState extends State<InformationChannel> {
     required List<int> lists,
     required bool isProject,
   }) {
-    final String titleOption = isProject ? 'project' : 'member';
     return Card(
       color: Colors.white,
       elevation: 2,
@@ -299,46 +338,46 @@ class _InformationChannelState extends State<InformationChannel> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // children: lists
-        //     .map(
-        //       (member) => ListTile(
-        //         leading: InitialsAvatar(
-        //             name: UserService().getFullNameByUid(member), size: 40),
-        //         title: FutureBuilder<String>(
-        //           future: UserService().getFullNameByUid(
-        //               member), // Gọi hàm trả về Future<String>
-        //           builder: (context, snapshot) {
-        //             if (snapshot.connectionState == ConnectionState.waiting) {
-        //               return const Text(
-        //                 'Đang tải...',
-        //                 style: TextStyle(
-        //                   fontSize: 14,
-        //                   color: Colors.grey,
-        //                 ),
-        //               );
-        //             }
-        //             if (snapshot.hasError) {
-        //               return const Text(
-        //                 'Lỗi khi tải tên',
-        //                 style: TextStyle(
-        //                   fontSize: 14,
-        //                   color: Colors.red,
-        //                 ),
-        //               );
-        //             }
-        //             return Text(
-        //               snapshot.data ??
-        //                   'Không rõ tên', // Hiển thị tên hoặc giá trị mặc định
-        //               style: const TextStyle(
-        //                 fontSize: 14,
-        //                 color: Colors.black87,
-        //               ),
-        //             );
-        //           },
-        //         ),
-        //       ),
-        //     )
-        //     .toList(),
+        children: lists
+            .map(
+              (member) => ListTile(
+                leading: InitialsAvatar(
+                    name: AuthApiService().getUserNameById(member), size: 40),
+                title: FutureBuilder<String>(
+                  future: AuthApiService()
+                      .getUserNameById(member), // Gọi hàm trả về Future<String>
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text(
+                        'Đang tải...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return const Text(
+                        'Lỗi khi tải tên',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                        ),
+                      );
+                    }
+                    return Text(
+                      snapshot.data ??
+                          'Không rõ tên', // Hiển thị tên hoặc giá trị mặc định
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }

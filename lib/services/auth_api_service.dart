@@ -53,6 +53,20 @@ class AuthApiService extends DioService {
     }
   }
 
+  Future<String> ChangeAvatar(String url) async {
+    var response =
+        await apiService.postData(baseUrl + ApiConfig.users + "/changeAvatar", {
+      'url': url,
+    });
+    if (response != null && response.statusCode == 200) {
+      String accCessToken = response.data['profilePictureUrl'];
+      return accCessToken;
+    } else {
+      log("Thây đổi ảnh thất bại");
+      return "Thây đổi ảnh thất bại";
+    }
+  }
+
   Future<String> signUp(String email, String password, String fullname) async {
     var response =
         await apiService.postData(baseUrl + ApiConfig.emailRegister, {

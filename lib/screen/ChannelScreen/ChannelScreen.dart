@@ -1,10 +1,10 @@
 // ignore_for_file: file_names, use_build_context_synchronously, sort_child_properties_last, avoid_print, unnecessary_to_list_in_spreads, curly_braces_in_flow_control_structures
 
-import 'dart:io';
-
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:testflutter/models/ChannelModel.dart';
+import 'package:testflutter/models/ProjectModel.dart';
 import 'package:testflutter/models/UserSession.dart';
 import 'package:testflutter/screen/ChannelScreen/InformationGroupScreen.dart';
 
@@ -22,22 +22,25 @@ class _ChannelScreen extends State<ChannelScreen> {
   final TextEditingController _nameProjectController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  // void _createProject(Channel channel) async {
-  //   Project newProject = Project(
-  //       projectId: '',
-  //       groupId: channel.channelId,
-  //       projectName: _nameProjectController.text,
-  //       description: _descriptionController.text,
-  //       startDate: DateTime.now(),
-  //       ownerId: channel.adminId,
-  //       memberIds: channel.memberIds,
-  //       tasks: [],
-  //       searchKeywords: generateSearchKeywords(_nameProjectController.text));
 
-  //   await Provider.of<ProjectProvider>(context, listen: false)
-  //       .createProject(newProject, channel.channelId);
-  //   //send notificaInApp
-  //   DocumentSnapshot userDoc = await _firestore.collection('users').doc(currentUserId).get();
+  // void _createProject() async {
+  //   if (_nameProjectController.text.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Please enter a Project name")),
+  //     );
+  //     return channel;
+  //   }
+
+  //   if (UserSession.currentUser?.id != null) {
+  //     final channelApiService = ChannelApiService();
+  //     channel =
+  //         (await channelApiService.createChannel(_groupNameController.text))!;
+  //   }
+  //   return channel;
+  // }
+
+
+  
   //   String names= userDoc['fullname'];
   //   String title = _nameProjectController.text;
   //   //Gửi cho những người được chọn để tạo group
@@ -670,6 +673,7 @@ class _FilesTabState extends State<FilesTab> {
                   children: [
                     FloatingActionButton.extended(
                       backgroundColor: Colors.white,
+                      heroTag: "create_folder_fab",
                       onPressed: _showCreateFolderDialog,
                       label: const Text(
                         "Create folder",
@@ -681,6 +685,7 @@ class _FilesTabState extends State<FilesTab> {
                     const SizedBox(height: 8.0),
                     FloatingActionButton.extended(
                       backgroundColor: Colors.white,
+                      heroTag: "upload_file_fab",
                       onPressed: () => {},
                       label: const Text("Upload file",
                           style: TextStyle(color: Colors.blue)),

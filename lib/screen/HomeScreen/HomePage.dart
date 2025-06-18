@@ -44,7 +44,7 @@ class _HomePage extends State<HomePage> {
   // }
   @override
   void logout() async {
-    // await StorageService.deleteToken();
+    await StorageService.clearTokens();
     if (context.mounted) {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => LoginScreen()));
@@ -94,7 +94,7 @@ class _HomePage extends State<HomePage> {
     if (mounted) {
       setState(() {
         tasks = data;
-        log("đây là task" + tasks.toString());
+        log("đây là" + tasks.toString());
       });
 
       if (tasks.isEmpty) {
@@ -159,8 +159,8 @@ class _HomePage extends State<HomePage> {
               child: CircleAvatar(
                 radius: 25,
                 backgroundImage: NetworkImage(
-                  UserSession.currentUser?.url.isNotEmpty == true
-                      ? UserSession.currentUser!.url
+                  UserSession.currentUser?.urlImg.isNotEmpty == true
+                      ? UserSession.currentUser!.urlImg
                       : 'https://i.pravatar.cc/150?img=3',
                 ), // Hình ảnh thay thế nút ba chấm
               ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:testflutter/models/ProjectModel.dart';
 import 'package:testflutter/models/UserSession.dart';
 import 'package:testflutter/models/user.dart';
-import 'package:testflutter/screen/ProfileCreen/DetailProjectScreen.dart';
+import 'package:testflutter/screen/ProjectScreen/DetailProjectScreen.dart';
 import 'package:testflutter/services/projectService.dart';
 
 class ChildProjectWidget extends StatelessWidget {

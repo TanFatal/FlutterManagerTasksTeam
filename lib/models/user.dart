@@ -4,20 +4,20 @@ class User extends Equatable {
   final int id;
   final String email;
   final String fullname;
-  final String url;
+  final String urlImg;
 
   const User(
       {required this.id,
       required this.email,
       required this.fullname,
-      required this.url});
+      required this.urlImg});
 
   //initial
   factory User.initial() => const User(
         id: 0,
         email: '',
         fullname: '',
-        url: '',
+        urlImg: '',
       );
 
   //copyWith
@@ -25,13 +25,13 @@ class User extends Equatable {
     int? id,
     String? email,
     String? fullname,
-    String? url,
+    String? urlImg,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
       fullname: fullname ?? this.fullname,
-      url: url ?? this.url,
+      urlImg: urlImg ?? this.urlImg,
     );
   }
 
@@ -40,7 +40,7 @@ class User extends Equatable {
         id: json['userId'] ?? 0,
         email: json['email'] ?? '',
         fullname: json['fullname'] ?? '',
-        url: json['profilePictureUrl'] ?? '',
+        urlImg: json['profilePictureUrl'] ?? '',
       );
 
   //toJson
@@ -48,9 +48,9 @@ class User extends Equatable {
         'userId': id,
         'email': email,
         'fullname': fullname,
-        'url': url,
+        'url': urlImg,
       };
 
   @override
-  List<Object> get props => [id, email, fullname, url];
+  List<Object> get props => [id, email, fullname, urlImg];
 }
