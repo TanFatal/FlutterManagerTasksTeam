@@ -38,9 +38,10 @@ class MessageApiService {
       int roomChatId, String content, String type) async {
     try {
       Response? response = await apiService.postData(
-          baseUrl + ApiConfig.message + "/" + roomChatId.toString() + "/send",
+          baseUrl + ApiConfig.message + "/" + roomChatId.toString() + "/sent",
           {"content": content, "type": type});
-
+      log("content:" + content.toString());
+      log("type:" + type.toString());
       if (response != null && response.statusCode == 200) {
         return "Gửi tin nhắn thành công!";
       } else {
