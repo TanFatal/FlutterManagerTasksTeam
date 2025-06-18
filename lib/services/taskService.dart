@@ -4,10 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:testflutter/models/TaskModel.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class TaskApiService extends DioService {
-  @override
+class TaskApiService {
   String get baseUrl => ApiConfig.baseUrl;
 
   final ApiService apiService = ApiService();

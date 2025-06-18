@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:testflutter/models/ChannelModel.dart';
 import 'package:testflutter/models/ProjectModel.dart';
 import 'package:testflutter/models/UserSession.dart';
+import 'package:testflutter/models/user.dart';
 import 'package:testflutter/screen/ChannelScreen/InformationGroupScreen.dart';
+import 'package:testflutter/services/channel_api_service.dart';
+import 'package:testflutter/services/projectService.dart';
+import 'package:intl/intl.dart';
 
 class ChannelScreen extends StatefulWidget {
   final ChannelModel channel;
@@ -22,50 +26,173 @@ class _ChannelScreen extends State<ChannelScreen> {
   final TextEditingController _nameProjectController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
+  // New state variables for date and member selection
+  DateTime? _selectedEndDate;
+  List<User> _channelMembers = [];
+  List<User> _selectedMembers = [];
+  bool _isLoadingMembers = false;
 
-  // void _createProject() async {
-  //   if (_nameProjectController.text.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("Please enter a Project name")),
-  //     );
-  //     return channel;
-  //   }
+  final ChannelApiService _channelApiService = ChannelApiService();
+  final ProjectService _projectService = ProjectService();
 
-  //   if (UserSession.currentUser?.id != null) {
-  //     final channelApiService = ChannelApiService();
-  //     channel =
-  //         (await channelApiService.createChannel(_groupNameController.text))!;
-  //   }
-  //   return channel;
-  // }
+  @override
+  void initState() {
+    super.initState();
+    _loadChannelMembers();
+  }
 
+  // Load members of the channel
+  Future<void> _loadChannelMembers() async {
+    setState(() {
+      _isLoadingMembers = true;
+    });
 
-  
-  //   String names= userDoc['fullname'];
-  //   String title = _nameProjectController.text;
-  //   //Gửi cho những người được chọn để tạo group
-  //   for(String selectedUserss in channel.memberIds){
-  //     NotificationUser notification=NotificationUser(
-  //     id: '',
-  //     useredId: currentUserId,
-  //     body: '$names đã tạo một Project $title  mới',
-  //     type: NotificationType.group,
-  //     isRead: false,
-  //     timestamp: DateTime.now());
-  //   if(selectedUserss != currentUserId){
-  //     await NotificationService().createNotification(selectedUserss, notification);
-  //   DocumentSnapshot userDoc = await _firestore.collection('users').doc(selectedUserss).get();
-  //   String pushToken = userDoc['pushToken'];
-  //   await FirebaseAPI().sendPushNotification(pushToken,'$names đã tạo một Project $title mới', names);
-  //   }
-  //   else continue;
-  //   }
-  //   Navigator.of(context).push(
-  //     MaterialPageRoute(
-  //       builder: (_) => DetailProjectScreen(project: newProject),
-  //     ),
-  //   );
-  // }
+    try {
+      final members = await _channelApiService
+          .getAllMemberOfChannel(widget.channel.channelId);
+      setState(() {
+        _channelMembers = members;
+        _isLoadingMembers = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMembers = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading members: $e')),
+      );
+    }
+  }
+
+  // Show date picker
+  Future<void> _selectEndDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != _selectedEndDate) {
+      setState(() {
+        _selectedEndDate = picked;
+      });
+    }
+  }
+
+  // Show member selection dialog
+  Future<void> _showMemberSelectionDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Select Members'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: _isLoadingMembers
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                        itemCount: _channelMembers.length,
+                        itemBuilder: (context, index) {
+                          final member = _channelMembers[index];
+                          final isSelected = _selectedMembers.contains(member);
+
+                          return CheckboxListTile(
+                            title: Text(member.fullname ?? 'Unknown'),
+                            subtitle: Text(member.email ?? ''),
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              setDialogState(() {
+                                if (value == true) {
+                                  _selectedMembers.add(member);
+                                } else {
+                                  _selectedMembers.remove(member);
+                                }
+                              });
+                              setState(() {}); // Update parent state
+                            },
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Create project with selected data
+  Future<void> _createProject() async {
+    if (_nameProjectController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a project name")),
+      );
+      return;
+    }
+
+    if (_selectedEndDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select an end date")),
+      );
+      return;
+    }
+
+    if (_selectedMembers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select at least one member")),
+      );
+      return;
+    }
+
+    try {
+      final memberIds = _selectedMembers.map((member) => member.id).toList();
+
+      final project = await _projectService.createProject(
+        widget.channel.channelId,
+        _nameProjectController.text,
+        _descriptionController.text,
+        _selectedEndDate!,
+        memberIds,
+      );
+
+      if (project != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Project created successfully!")),
+        );
+
+        // Clear form
+        _nameProjectController.clear();
+        _descriptionController.clear();
+        setState(() {
+          _selectedEndDate = null;
+          _selectedMembers.clear();
+        });
+
+        Navigator.of(context).pop(); // Close dialog
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to create project")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error creating project: $e")),
+      );
+    }
+  }
 
   void _showCreateProjectBottomSheet(
       BuildContext context, ChannelModel channel) async {
@@ -78,7 +205,7 @@ class _ChannelScreen extends State<ChannelScreen> {
         ),
         builder: (BuildContext context) {
           return Container(
-            height: 400, // Chiều cao tùy chỉnh cho BottomModalSheet
+            height: 600, // Increased height for additional fields
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
               left: 16,
@@ -152,31 +279,77 @@ class _ChannelScreen extends State<ChannelScreen> {
                     maxLines: 5,
                   ),
                   const SizedBox(height: 16),
+
+                  // End Date Selection
+                  InkWell(
+                    onTap: _selectEndDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20.0, horizontal: 20.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.white,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _selectedEndDate == null
+                                ? 'Select End Date'
+                                : DateFormat('dd/MM/yyyy')
+                                    .format(_selectedEndDate!),
+                            style: TextStyle(
+                              color: _selectedEndDate == null
+                                  ? Colors.grey
+                                  : Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const Icon(Icons.calendar_today,
+                              color: Colors.blueAccent),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Member Selection
+                  InkWell(
+                    onTap: _showMemberSelectionDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20.0, horizontal: 20.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.white,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _selectedMembers.isEmpty
+                                  ? 'Select Members'
+                                  : '${_selectedMembers.length} member(s) selected',
+                              style: TextStyle(
+                                color: _selectedMembers.isEmpty
+                                    ? Colors.grey
+                                    : Colors.black,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.people, color: Colors.blueAccent),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   ElevatedButton(
-                    onPressed: () {
-                      if (_nameProjectController.text.isEmpty) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Thông báo'),
-                              content:
-                                  const Text('Tên dự án không được để trống.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(); // Đóng dialog
-                                  },
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      } else {
-                        //_createProject(channel);
-                      }
-                    },
+                    onPressed: _createProject,
                     child: const Text('Create New Project'),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
@@ -198,40 +371,6 @@ class _ChannelScreen extends State<ChannelScreen> {
       );
     }
   }
-
-  // void scheduleMeeting(
-  //     String currentChannelId, String meetingName, DateTime startTime) {
-  //   Meeting meetingNow = Meeting(
-  //       meetingId: startTime.microsecondsSinceEpoch.toString(),
-  //       meetingTitle: meetingName,
-  //       startTime: startTime,
-  //       status: MeetingStatus.upcoming,
-  //       participants: []);
-
-  //   _meetingService.createMeeting(currentChannelId, meetingNow);
-  // }
-
-  // void createInstantMeeting(
-  //     String currentUserId, String currentUserName, String currentChannelId) {
-  //   Meeting meetingNow = Meeting(
-  //       meetingId: DateTime.now().microsecondsSinceEpoch.toString(),
-  //       meetingTitle: 'Meeting\'s $currentUserName',
-  //       startTime: DateTime.now(),
-  //       status: MeetingStatus.ongoing,
-  //       participants: [currentUserId]);
-
-  //   _meetingService.createMeeting(currentChannelId, meetingNow);
-
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //         builder: (context) => VideoConferencePage(
-  //             channelId: currentChannelId,
-  //             meeting: meetingNow,
-  //             userId: currentUserId,
-  //             userName: currentUserName)),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -255,116 +394,6 @@ class _ChannelScreen extends State<ChannelScreen> {
             PopupMenuButton<String>(
               color: Colors.white,
               icon: const Icon(Icons.videocam_outlined, color: Colors.blue),
-              // onSelected: (value) {
-              //   if (value == 'instant') {
-              //     createInstantMeeting(
-              //         currentUser!.userId,
-              //         currentUser.fullname,
-              //         currentChannel.channelId); // Gọi hàm tạo cuộc họp tức thì
-              //   } else if (value == 'schedule') {
-              //     showDialog(
-              //       context: context,
-              //       builder: (BuildContext context) {
-              //         TextEditingController meetingNameController =
-              //             TextEditingController();
-              //         DateTime selectedDateTime = DateTime.now();
-
-              //         return StatefulBuilder(
-              //           builder: (context, setState) {
-              //             return AlertDialog(
-              //               title: const Text('Lên lịch cuộc họp'),
-              //               content: Column(
-              //                 mainAxisSize: MainAxisSize.min,
-              //                 children: [
-              //                   // Trường nhập tên cuộc họp
-              //                   TextField(
-              //                     controller: meetingNameController,
-              //                     decoration: const InputDecoration(
-              //                         labelText: 'Tên cuộc họp'),
-              //                   ),
-              //                   const SizedBox(height: 16),
-              //                   // Trường chọn ngày giờ bắt đầu
-              //                   TextFormField(
-              //                     readOnly: true,
-              //                     decoration: InputDecoration(
-              //                       labelText: 'Ngày giờ bắt đầu',
-              //                       hintText: DateFormat('yyyy-MM-dd HH:mm')
-              //                           .format(selectedDateTime),
-              //                     ),
-              //                     onTap: () async {
-              //                       DateTime? pickedDate = await showDatePicker(
-              //                         context: context,
-              //                         initialDate: selectedDateTime,
-              //                         firstDate: DateTime.now(),
-              //                         lastDate: DateTime(2100),
-              //                       );
-
-              //                       if (pickedDate != null) {
-              //                         TimeOfDay? pickedTime =
-              //                             await showTimePicker(
-              //                           context: context,
-              //                           initialTime: TimeOfDay.fromDateTime(
-              //                               selectedDateTime),
-              //                         );
-
-              //                         if (pickedTime != null) {
-              //                           setState(() {
-              //                             selectedDateTime = DateTime(
-              //                               pickedDate.year,
-              //                               pickedDate.month,
-              //                               pickedDate.day,
-              //                               pickedTime.hour,
-              //                               pickedTime.minute,
-              //                             );
-              //                           });
-              //                         }
-              //                       }
-              //                     },
-              //                   ),
-              //                 ],
-              //               ),
-              //               actions: [
-              //                 TextButton(
-              //                   onPressed: () => Navigator.pop(context),
-              //                   child: const Text('Hủy'),
-              //                 ),
-              //                 ElevatedButton(
-              //                   onPressed: () {
-              //                     if (meetingNameController.text.isEmpty) {
-              //                       // Kiểm tra nếu chưa nhập tên cuộc họp
-              //                       ScaffoldMessenger.of(context).showSnackBar(
-              //                         const SnackBar(
-              //                             content: Text(
-              //                                 'Vui lòng nhập tên cuộc họp')),
-              //                       );
-              //                     } else if (selectedDateTime
-              //                         .isBefore(DateTime.now())) {
-              //                       // Kiểm tra nếu ngày giờ bắt đầu là quá khứ
-              //                       ScaffoldMessenger.of(context).showSnackBar(
-              //                         const SnackBar(
-              //                             content: Text(
-              //                                 'Ngày giờ phải là sau thời gian hiện tại')),
-              //                       );
-              //                     } else {
-              //                       // Tiến hành tạo cuộc họp
-              //                       Navigator.pop(context);
-              //                       scheduleMeeting(
-              //                         currentChannel.channelId,
-              //                         meetingNameController.text,
-              //                         selectedDateTime,
-              //                       );
-              //                     }
-              //                   },
-              //                   child: const Text('Tạo'),
-              //                 ),
-              //               ],
-              //             );
-              //           },
-              //         );
-              //       },
-              //     );
-              //   }
-              // },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                 const PopupMenuItem<String>(
                   value: 'instant',
@@ -449,33 +478,7 @@ class _MeetingsTabState extends State<MeetingsTab> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
-        children: [
-          // Danh sách bài đăng
-          // StreamBuilder<List<Meeting>>(
-          //   //stream: meetingService.getAllMeetings(widget.channel.channelId),
-          //   builder: (context, snapshot) {
-          //     if (snapshot.connectionState == ConnectionState.waiting) {
-          //       return const Center(child: CircularProgressIndicator());
-          //     } else if (snapshot.hasError) {
-          //       return Center(child: Text("Error: ${snapshot.error}"));
-          //     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          //       return const Center(child: Text("No meetings"));
-          //     }
-
-          //     final allMeetings = snapshot.data!;
-
-          //     return ListView(
-          //       children: allMeetings
-          //           .map((meeting) => JoinCallCard(
-          //                 channelId: widget.channel.channelId,
-          //                 adminChannel: widget.channel.adminId,
-          //                 meeting: meeting,
-          //               ))
-          //           .toList(),
-          //     );
-          //   },
-          // ),
-        ],
+        children: [],
       ),
     );
   }
@@ -491,74 +494,6 @@ class FilesTab extends StatefulWidget {
 
 class _FilesTabState extends State<FilesTab> {
   String currentFolderId = "Home";
-  // List<Folder> listFolderNavi = [];
-
-  // FolderService folderService = FolderService();
-  // FileFolderService fileFolderService = FileFolderService();
-  // StorageService storageService = StorageService();
-
-// Lấy danh sách folder theo currentFolderId
-  // Future<List<Folder>> _fetchFolders() async {
-  //   return await folderService.getFoldersByParentId(
-  //       widget.channel.channelId, currentFolderId);
-  // }
-
-// Lấy danh sách file theo currentFolderId
-  // Future<List<FileModel>> _fetchFiles() async {
-  //   return await fileFolderService.getFilesByFolderId(
-  //       widget.channel.channelId, currentFolderId);
-  // }
-
-  // Tạo folder
-  // Future<void> _createFolder(String folderName) async {
-  //   await folderService.createFolder(
-  //       widget.channel.channelId,
-  //       Folder(
-  //         id: "", // Firebase sẽ tự động tạo ID
-  //         name: folderName,
-  //         parentFolderId: currentFolderId,
-  //         createdAt: DateTime.now(),
-  //         createdBy: FirebaseAuth.instance.currentUser!.uid,
-  //       ));
-  // }
-
-// Tải file lên
-  // Future<void> uploadFile() async {
-  //   // Chọn file từ thiết bị
-  //   FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-  //   if (result != null) {
-  //     String? filePath = result.files.single.path;
-  //     String fileName = result.files.single.name;
-
-  //     if (filePath != null) {
-  //       // Đọc file từ đường dẫn
-  //       final file = File(filePath);
-
-  //       // Tải file lên Firebase Storage
-  //       String downloadUrl = await storageService.uploadFileFolderToFirebaseStorage(
-  //           file,
-  //           currentFolderId); // Thay thế 'your_folder_name' bằng tên thư mục mong muốn
-
-  //       // Lưu thông tin file vào Firestore (sử dụng fileService.createFile)
-  //       await fileFolderService.createFile(
-  //           widget.channel.channelId,
-  //           FileFolder(
-  //             id: "", // Firebase sẽ tự động tạo ID
-  //             name: fileName,
-  //             downloadUrl: downloadUrl,
-  //             folderId: currentFolderId,
-  //             createdAt: DateTime.now(),
-  //             createdBy: FirebaseAuth.instance.currentUser!.uid,
-  //           ));
-
-  //       // Làm mới UI
-  //       setState(() {});
-  //     }
-  //   } else {
-  //     print("User canceled file selection.");
-  //   }
-  // }
 
   void _showCreateFolderDialog() {
     String folderName = '';
@@ -600,17 +535,6 @@ class _FilesTabState extends State<FilesTab> {
     );
   }
 
-  // Future<void> _uploadFile() async {
-  //   FilePickerResult? result = await FilePicker.platform.pickFiles();
-  //   if (result != null) {
-  //     String? filePath = result.files.single.path;
-  //     print("Đã chọn tệp: $filePath");
-  //     // Thực hiện logic tải lên tệp ở đây
-  //   } else {
-  //     print("Người dùng hủy chọn tệp.");
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -632,36 +556,9 @@ class _FilesTabState extends State<FilesTab> {
                 },
               ),
               const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-              // if (listFolderNavi.isNotEmpty)
-              //   for (int i = 0; i < listFolderNavi.length; i++) ...[
-              //     TextButton(
-              //       child: Text(
-              //         listFolderNavi[i].name,
-              //         style: const TextStyle(fontSize: 16, color: Colors.grey),
-              //       ),
-              //       onPressed: () {
-              //         // Logic để chuyển đến folder tương ứng
-              //         setState(() {
-              //           currentFolderId =
-              //               listFolderNavi[i].id; // Cập nhật folderId
-              //           listFolderNavi = listFolderNavi.sublist(
-              //               0, i + 1); // Điều chỉnh breadcrumb
-              //         });
-              //         print('Navigate to ${listFolderNavi[i]}');
-              //       },
-              //     ),
-              //     //if (i < listFolder.length - 1)
-              //     const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-              //   ],
             ],
           ),
 
-          // Danh sách file và folder
-          // Expanded(
-          //   child: _buildFolderAndFileList(),
-          // ),
-
-          // Nút thêm (Create Folder, Upload File)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
             child: Row(
@@ -696,91 +593,8 @@ class _FilesTabState extends State<FilesTab> {
               ],
             ),
           ),
-          // Padding(
-          //   padding: const EdgeInsets.all(16.0),
-          //   child: Row(
-          //     mainAxisAlignment: MainAxisAlignment.end,
-          //     children: [
-          //       FloatingActionButton(
-          //         backgroundColor: Colors.white,
-          //         onPressed: _toggleOptions,
-          //         child: Icon(
-          //           _showOptionsAdd ? Icons.close : Icons.add,
-          //           color: Colors.blue,
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
         ],
       ),
     );
   }
-
-  // Widget _buildFolderAndFileList() {
-  //   return FutureBuilder(
-  //     future: Future.wait([_fetchFolders(), _fetchFiles()]),
-  //     builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
-  //       if (snapshot.connectionState == ConnectionState.waiting) {
-  //         return const Center(child: CircularProgressIndicator());
-  //       }
-
-  //       if (snapshot.hasError) {
-  //         return Center(child: Text("Error: ${snapshot.error}"));
-  //       }
-
-  //       if (snapshot.hasData) {
-  //         final folders = snapshot.data![0] as List<Folder>;
-  //         final files = snapshot.data![1] as List<FileModel>;
-
-  //         return ListView(
-  //           //padding: const EdgeInsets.all(16.0),
-  //           children: [
-  //             ...folders.map((folder) => Container(
-  //                   decoration: const BoxDecoration(
-  //                     border: Border(
-  //                         bottom: BorderSide(
-  //                             color: Colors.blue, width: 0.5)), // Bo viền dưới
-  //                   ),
-  //                   child: ListTile(
-  //                     leading: const Icon(Icons.folder, color: Colors.blue),
-  //                     title: Text(folder.name),
-  //                     onTap: () {
-  //                       setState(() {
-  //                         currentFolderId = folder.id;
-  //                         print(currentFolderId);
-  //                         listFolderNavi.add(folder);
-  //                         print(listFolderNavi);
-  //                       });
-  //                     },
-  //                   ),
-  //                 )),
-  //             ...files.map((file) => Container(
-  //                   decoration: const BoxDecoration(
-  //                     border: Border(
-  //                         bottom: BorderSide(
-  //                             color: Colors.blue, width: 0.5)), // Bo viền dưới
-  //                   ),
-  //                   child: ListTile(
-  //                     leading: const Icon(Icons.insert_drive_file,
-  //                         color: Colors.grey),
-  //                     title: Text(file.name),
-  //                     onTap: () async {
-  //                       String filePath = file.downloadUrl;
-  //                       try {
-  //                         await OpenFile.open(filePath);
-  //                       } catch (e) {
-  //                         print('Error opening file: $e');
-  //                       }
-  //                     },
-  //                   ),
-  //                 )),
-  //           ],
-  //         );
-  //       }
-
-  //       return const Center(child: Text("No files or folders found."));
-  //     },
-  //   );
-  // }
 }

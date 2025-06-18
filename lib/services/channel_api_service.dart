@@ -7,18 +7,12 @@ import 'package:testflutter/models/user.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import 'package:testflutter/services/storage/storage_service.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class ChannelApiService extends DioService {
-  @override
+class ChannelApiService {
   String get baseUrl => ApiConfig.baseUrl;
 
   final ApiService apiService = ApiService();
   final StorageService secureStorage = StorageService();
-
-  // ChannelApiService() {
-  //   init();
-  // }
   Future<ChannelModel?> createChannel(String nameModel) async {
     Response? response = await apiService
         .postData(baseUrl + ApiConfig.channel, {"name": nameModel});

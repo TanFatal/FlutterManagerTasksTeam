@@ -4,17 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import 'package:testflutter/services/storage/storage_service.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class AuthApiService extends DioService {
-  @override
+class AuthApiService {
   String get baseUrl => ApiConfig.baseUrl;
   final ApiService apiService = ApiService();
   final StorageService secureStorage = StorageService();
 
-  AuthApiService() {
-    init();
-  }
+  AuthApiService();
 
   Future<bool> loginUser(String email, String password) async {
     var response = await apiService.postData(baseUrl + ApiConfig.emailLogin, {

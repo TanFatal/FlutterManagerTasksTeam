@@ -7,10 +7,8 @@ import 'package:testflutter/models/user.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import 'package:testflutter/services/storage/storage_service.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class ProjectService extends DioService {
-  @override
+class ProjectService {
   String get baseUrl => ApiConfig.baseUrl;
 
   final ApiService apiService = ApiService();
