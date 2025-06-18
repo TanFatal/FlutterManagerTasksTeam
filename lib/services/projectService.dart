@@ -19,23 +19,38 @@ class ProjectService {
   // }
   Future<ProjectModel?> createProject(int channelId, String name,
       String description, DateTime endDate, List<int> members) async {
-    Response? response = await apiService.postData(
-        baseUrl + ApiConfig.project + "/channelID/" + channelId.toString(), {
+    final requestData = {
       "name": name,
       "description": description,
       "endDate": endDate.toIso8601String().split('.')[0],
       "listUser": members
-    });
+    };
+
+    final endpoint =
+        baseUrl + ApiConfig.project + "/channelID/" + channelId.toString();
+
+    // Debug logging
+    print('=== API REQUEST DEBUG ===');
+    print('Endpoint: $endpoint');
+    print('Request Data: $requestData');
+    print('========================');
+
+    Response? response = await apiService.postData(endpoint, requestData);
+
+    print('Response Status Code: ${response?.statusCode}');
+    print('Response Data: ${response?.data}');
 
     if (response != null && response.statusCode == 200) {
       // Chuyển đổi response.body thành JSON
       final Map<String, dynamic> jsonData = response.data;
 
-      // Chuyển đổi JSON thành ChannelModel
+      // Chuyển đổi JSON thành ProjectModel
       ProjectModel newProject = ProjectModel.fromJson(jsonData);
+      print('Project created successfully!');
       return newProject;
     } else {
-      log("Tạo Project thất bại!");
+      log("Tạo Project thất bại! Status: ${response?.statusCode}");
+      log("Error Response: ${response?.data}");
       return null; // Trả về null thay vì false để đảm bảo kiểu dữ liệu nhất quán
     }
   }
