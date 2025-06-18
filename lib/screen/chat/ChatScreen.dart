@@ -1,276 +1,347 @@
 // ignore_for_file: file_names
 
 import 'dart:io';
-import 'dart:math';
+import 'dart:developer';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:image_picker/image_picker.dart';
-import 'package:ruprup/screens/MainScreen.dart';
-import 'package:ruprup/services/chat_service.dart';
-import 'package:ruprup/services/image_service.dart';
-import 'package:ruprup/services/user_service.dart';
-import 'package:ruprup/widgets/avatar/InitialsAvatar.dart';
-import 'package:testflutter/screen/MainScreen.dart';
-
+import 'package:intl/intl.dart';
+import 'package:testflutter/models/RoomChatPreView.dart';
+import 'package:testflutter/models/MessageModel.dart';
+import 'package:testflutter/models/UserSession.dart';
+import 'package:testflutter/services/messageService.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final RoomChatPreviewModel roomChatPreview;
+  
+  const ChatScreen({super.key, required this.roomChatPreview});
+  
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  Color getColorFromCreatedAt(DateTime createdAt) {
-    // Danh sách 7 màu sắc cầu vồng
-    final List<Color> rainbowColors = [
-      Colors.red.shade300,
-      Colors.orange.shade300,
-      Colors.yellow.shade700,
-      Colors.green.shade300,
-      Colors.blue.shade300,
-      Colors.indigo.shade300,
-      Colors.purple.shade300,
-    ];
+  final MessageApiService _messageService = MessageApiService();
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  
+  List<MessageModel> _messages = [];
+  bool _isLoading = true;
+  bool _isSending = false;
 
-    // Chuyển `createdAt` thành chỉ số trong khoảng từ 0 đến 6
-    final index = createdAt.millisecondsSinceEpoch % rainbowColors.length;
-    return rainbowColors[index];
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMessages() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final messages = await _messageService.getAllMessageByRoomChat(
+        widget.roomChatPreview.roomChat.roomChatId,
+      );
+      
+      setState(() {
+        _messages = messages; // Keep original order
+        _isLoading = false;
+      });
+      
+      // Scroll to bottom after loading
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      log('Error loading messages: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _sendMessage(String content, String type) async {
+    if (content.trim().isEmpty) return;
+
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      final result = await _messageService.sendMessageToRoomChatId(
+        widget.roomChatPreview.roomChat.roomChatId,
+        content,
+        type,
+      );
+      
+      log('Send message result: $result');
+      
+      // Reload messages after sending
+      await _loadMessages();
+      
+      // Clear input
+      _messageController.clear();
+      
+    } catch (e) {
+      log('Error sending message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message: $e')),
+      );
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
+  }
+
+  String get _roomName {
+    final room = widget.roomChatPreview.roomChat;
+    String roomName = room.nameRoom;
+    final parts = roomName.split('_');
+    if (parts.length == 2 && UserSession.currentUser != null) {
+      roomName = (parts[0] == UserSession.currentUser?.fullname) ? parts[1] : parts[0];
+    }
+    return roomName;
+  }
+
+  bool _isValidImageUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    try {
+      final uri = Uri.tryParse(url);
+      if (uri == null || !uri.hasAbsolutePath) return false;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return false;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  bool _isCurrentUser(int senderId) {
+    return UserSession.currentUser?.id == senderId;
+  }
+
+  Widget _buildMessageBubble(MessageModel message) {
+    final isCurrentUser = _isCurrentUser(message.senderId);
+    final time = DateFormat('HH:mm').format(message.timestamp);
+    
+    return Align(
+      alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: isCurrentUser ? Colors.blue : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (message.type == 'image' && _isValidImageUrl(message.content))
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  message.content,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 200,
+                      width: double.infinity,
+                      color: Colors.grey.shade300,
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 200,
+                      width: double.infinity,
+                      color: Colors.grey.shade300,
+                      child: const Center(
+                        child: Icon(Icons.broken_image, size: 50),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              Text(
+                message.content,
+                style: TextStyle(
+                  color: isCurrentUser ? Colors.white : Colors.black87,
+                  fontSize: 16,
+                ),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              time,
+              style: TextStyle(
+                color: isCurrentUser ? Colors.white70 : Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final room = widget.roomChatPreview.roomChat;
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>const Mainscreen (),
-              ),
-            );
-          },
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
         ),
         title: Row(
           children: [
-            // CircleAvatar(
-            //   backgroundImage: NetworkImage('${widget.roomChat.imageUrl}'),
-            //   radius: 20,
-            // ),
-            widget.roomChat.type == 'direct' ?
-              PersonalInitialsAvatar(name: nameRoomDirect)
-            :CircleAvatar(
-              radius: 25,
-              backgroundColor: widget.roomChat.imageUrl == null
-                  ? getColorFromCreatedAt(DateTime.fromMillisecondsSinceEpoch(
-                      widget.roomChat.createAt))
-                  : Colors.transparent,
-              backgroundImage: widget.roomChat.imageUrl != null
-                  ? NetworkImage(widget.roomChat.imageUrl!)
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: _isValidImageUrl(room.urlImages) 
+                  ? Colors.transparent 
+                  : Colors.blue.shade700,
+              backgroundImage: _isValidImageUrl(room.urlImages)
+                  ? NetworkImage(room.urlImages)
                   : null,
-              child: widget.roomChat.imageUrl == null
-                  ? const Icon(Icons.groups, color: Colors.white, size: 30)
+              child: !_isValidImageUrl(room.urlImages)
+                  ? const Icon(Icons.groups, color: Colors.white, size: 24)
                   : null,
             ),
-            const SizedBox(width: 20),
-            Text(
-              nameRoomDirect,
-              style: const TextStyle(fontSize: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _roomName,
+                style: const TextStyle(fontSize: 18, color: Colors.white),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.white, Colors.white70, Colors.blue],
+              colors: [Colors.blue, Colors.blue],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.more_horiz),
-        //     onPressed: () {
-        //       ScaffoldMessenger.of(context).showSnackBar(
-        //         const SnackBar(content: Text('Setting')),
-        //       );
-        //     },
-        //   ),
-        // ],
       ),
       body: Column(
         children: [
+          // Messages list
           Expanded(
-            child: Chat(
-              messages: _messages,
-              onSendPressed: (types.PartialText message) {
-                _handleSendPressed(message);
-              },
-              user: _currentUser,
-              showUserAvatars: true,
-              showUserNames: true,
-              // avatarBuilder: (userId) {
-              //   final messageUser = _messages
-              //       .firstWhere((message) => message.author.id == userId);
-              //   return CircleAvatar(
-              //     backgroundImage: NetworkImage(messageUser.author.avatarUrl ??
-              //         'https://example.com/default-avatar.png'),
-              //   );
-              // },
-              avatarBuilder: (types.User user) {
-                final userModel = userMap[user.id];
-
-                return PersonalInitialsAvatar(name: userModel!.fullname);
-              },
-              nameBuilder: (types.User user) {
-                // Kiểm tra nếu có userModel cho userId hiện tại
-                final userModel = userMap[user.id];
-
-                // Nếu tìm thấy userModel, hiển thị fullname
-                if (userModel != null) {
-                  return Text(
-                    userModel.fullname,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  );
-                } else {
-                  // Nếu không tìm thấy userModel, hiển thị 'Unknown'
-                  return const Text(
-                    'Unknown User',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  );
-                }
-              },
-              theme: DefaultChatTheme(
-                inputBackgroundColor: Colors.blue.shade100,
-                inputTextColor: Colors.black,
-                sendButtonIcon: const Icon(Icons.send, color: Colors.blue),
-                primaryColor: Colors.blue,
-                messageInsetsHorizontal: 15,
-                messageInsetsVertical: 15,
-              ),
-              customBottomWidget: CustomMessageInput(
-                  onSendPressed: (message) =>
-                      _handleSendPressed(types.PartialText(text: message))),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _messages.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No messages yet.\nStart the conversation!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessageBubble(_messages[index]);
+                        },
+                      ),
+          ),
+          
+          // Message input
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  blurRadius: 5,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          )
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.image, color: Colors.blue),
+                  onPressed: _pickImage,
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(25)),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                    onSubmitted: (value) => _sendMessage(value, 'text'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _isSending
+                    ? const CircularProgressIndicator()
+                    : IconButton(
+                        icon: const Icon(Icons.send, color: Colors.blue),
+                        onPressed: () => _sendMessage(_messageController.text, 'text'),
+                      ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
-}
-
-class CustomMessageInput extends StatefulWidget {
-  final Function(String) onSendPressed;
-
-  const CustomMessageInput({super.key, required this.onSendPressed});
-
-  @override
-  // ignore: library_private_types_in_public_api
-  _CustomMessageInputState createState() => _CustomMessageInputState();
-}
-
-class _CustomMessageInputState extends State<CustomMessageInput> {
-  final TextEditingController _controller = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  final ImageService imageService = ImageService();
-
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
-      widget.onSendPressed(_controller.text);
-      _controller.clear();
-    }
-  }
 
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
     if (pickedFile != null) {
-      File imageFile = File(pickedFile.path);
-
-      // Gửi ảnh lên Firebase Storage và lấy URL
-      String imageUrl =
-          await imageService.uploadImageToFirebaseStorage(imageFile, false);
-      // ignore: avoid_print
-      print(imageUrl);
-
-      widget.onSendPressed(imageUrl); // Gửi đường dẫn hình ảnh
-    }
-  }
-
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        final file = result.files.single;
-        // ignore: avoid_print
-        print('File picked: ${file.name}');
-        // Gửi file hoặc làm gì đó với file đã chọn
-      }
-    } catch (e) {
-      // ignore: avoid_print
-      print('Error picking file: $e');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 9,
-              spreadRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
+      // TODO: Upload image to your image service and get URL
+      // For now, just send the local path (this won't work in production)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Image upload not implemented yet. Please add your image upload service.'),
         ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.attach_file, color: Colors.blue),
-              onPressed: _pickFile,
-            ),
-            IconButton(
-              icon: const Icon(Icons.image, color: Colors.blue),
-              onPressed: _pickImage,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                ),
-                style: const TextStyle(fontSize: 16),
-                onSubmitted: (value) => _sendMessage(),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.send, color: Colors.blue),
-              onPressed: _sendMessage,
-              padding: const EdgeInsets.all(8.0),
-            ),
-          ],
-        ),
-      ),
-    );
+      );
+    }
   }
 }

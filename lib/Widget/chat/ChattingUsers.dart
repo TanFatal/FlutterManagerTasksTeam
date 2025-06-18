@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:testflutter/models/RoomChatPreView.dart';
 import 'package:testflutter/models/UserSession.dart';
+import 'package:testflutter/screen/chat/ChatScreen.dart';
 
 class ChattingUsersWidget extends StatefulWidget {
   final RoomChatPreviewModel preview;
@@ -112,7 +113,14 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
       trailing:
           Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       onTap: () {
-        // TODO: push to ChatScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              roomChatPreview: widget.preview,
+            ),
+          ),
+        );
       },
     );
   }
