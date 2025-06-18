@@ -12,6 +12,7 @@ import 'package:testflutter/models/UserSession.dart';
 import 'package:testflutter/services/messageService.dart';
 import 'package:testflutter/services/auth_api_service.dart';
 import 'package:testflutter/config/api_config.dart';
+import 'package:testflutter/config/clouddinaryConfig.dart';
 
 class ChatScreen extends StatefulWidget {
   final RoomChatPreviewModel roomChatPreview;
@@ -25,6 +26,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final MessageApiService _messageService = MessageApiService();
   final AuthApiService _authService = AuthApiService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -168,11 +170,9 @@ class _ChatScreenState extends State<ChatScreen> {
         final userData = response.data;
         _userDataCache[senderId] = {
           'name': userData['fullname'] ?? 'Unknown User',
-          'avatar': userData['urlImg'] ?? '', // Get avatar URL from API
+          'avatar': userData['profilePictureUrl'] ?? '',
         };
-        log('✅ Loaded user data for $senderId: ${userData['fullname']}, avatar: ${userData['urlImg']}');
       } else {
-        log('❌ Failed to load user data for $senderId');
         _userDataCache[senderId] = {
           'name': 'Unknown User',
           'avatar': '',
@@ -211,9 +211,34 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  String _formatMessageTime(DateTime messageTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate =
+        DateTime(messageTime.year, messageTime.month, messageTime.day);
+
+    // Cùng ngày - hiển thị giờ
+    if (messageDate == today) {
+      return DateFormat('HH:mm').format(messageTime);
+    }
+
+    // Cùng tháng - hiển thị ngày
+    if (messageTime.year == now.year && messageTime.month == now.month) {
+      return DateFormat('dd/MM').format(messageTime);
+    }
+
+    // Cùng năm - hiển thị tháng
+    if (messageTime.year == now.year) {
+      return DateFormat('dd/MM').format(messageTime);
+    }
+
+    // Khác năm - hiển thị năm
+    return DateFormat('dd/MM/yyyy').format(messageTime);
+  }
+
   Widget _buildMessageBubble(MessageModel message) {
     final isCurrentUser = _isCurrentUser(message.senderId);
-    final time = DateFormat('HH:mm').format(message.timestamp);
+    final time = _formatMessageTime(message.timestamp);
 
     if (isCurrentUser) {
       // Current user message - align right, no avatar
@@ -232,19 +257,31 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (message.type == 'image' && _isValidImageUrl(message.content))
+              if (message.type == 'img' && _isValidImageUrl(message.content))
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
                     message.content,
                     fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
                         height: 200,
                         width: double.infinity,
                         color: Colors.grey.shade300,
-                        child: const Center(child: CircularProgressIndicator()),
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(color: Colors.blue),
+                              SizedBox(height: 8),
+                              Text('Loading image...',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        ),
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
@@ -253,7 +290,16 @@ class _ChatScreenState extends State<ChatScreen> {
                         width: double.infinity,
                         color: Colors.grey.shade300,
                         child: const Center(
-                          child: Icon(Icons.broken_image, size: 50),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image,
+                                  size: 50, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Failed to load image',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -337,13 +383,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (message.type == 'image' &&
+                          if (message.type == 'img' &&
                               _isValidImageUrl(message.content))
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
                                 message.content,
                                 fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: 200,
                                 loadingBuilder:
                                     (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
@@ -352,7 +400,19 @@ class _ChatScreenState extends State<ChatScreen> {
                                     width: double.infinity,
                                     color: Colors.grey.shade300,
                                     child: const Center(
-                                        child: CircularProgressIndicator()),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          CircularProgressIndicator(
+                                              color: Colors.blue),
+                                          SizedBox(height: 8),
+                                          Text('Loading image...',
+                                              style: TextStyle(
+                                                  color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
                                   );
                                 },
                                 errorBuilder: (context, error, stackTrace) {
@@ -361,7 +421,18 @@ class _ChatScreenState extends State<ChatScreen> {
                                     width: double.infinity,
                                     color: Colors.grey.shade300,
                                     child: const Center(
-                                      child: Icon(Icons.broken_image, size: 50),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.broken_image,
+                                              size: 50, color: Colors.grey),
+                                          SizedBox(height: 8),
+                                          Text('Failed to load image',
+                                              style: TextStyle(
+                                                  color: Colors.grey)),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
@@ -527,14 +598,45 @@ class _ChatScreenState extends State<ChatScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      // TODO: Upload image to your image service and get URL
-      // For now, just send the local path (this won't work in production)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Image upload not implemented yet. Please add your image upload service.'),
-        ),
-      );
+      setState(() {
+        _isSending = true;
+      });
+
+      try {
+        // Upload image to Cloudinary
+        final imageFile = File(pickedFile.path);
+        final imageUrl = await _cloudinaryService.uploadImage(imageFile);
+
+        if (imageUrl != null) {
+          log('✅ Image uploaded successfully: $imageUrl');
+          // Send image message with type 'img'
+          await _sendMessage(imageUrl, 'img');
+        } else {
+          log('❌ Failed to upload image');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to upload image. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        log('Error uploading image: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error uploading image: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 }

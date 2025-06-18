@@ -72,12 +72,13 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
 
     // Hiển thị nội dung tin nhắn hoặc thông báo "Không có tin nhắn"
     final content = msg.content.isNotEmpty
-        ? (msg.content.startsWith('http') &&
-                (msg.content.contains('.jpg') ||
-                    msg.content.contains('.jpeg') ||
-                    msg.content.contains('.png') ||
-                    msg.content.contains('.gif') ||
-                    msg.content.contains('cloudinary.com'))
+        ? (msg.type == 'img' ||
+                (msg.content.startsWith('http') &&
+                    (msg.content.contains('.jpg') ||
+                        msg.content.contains('.jpeg') ||
+                        msg.content.contains('.png') ||
+                        msg.content.contains('.gif') ||
+                        msg.content.contains('cloudinary.com')))
             ? 'Sent an image'
             : msg.content)
         : '';
