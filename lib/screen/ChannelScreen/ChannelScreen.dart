@@ -180,11 +180,15 @@ class _ChannelScreen extends State<ChannelScreen> {
 
       // Debug logging
       print('=== CREATE PROJECT DEBUG ===');
-      print('Channel ID: ${widget.channel.channelId}');
-      print('Project Name: ${_nameProjectController.text}');
-      print('Description: ${_descriptionController.text}');
+      print(
+          'Channel ID: ${widget.channel.channelId} (Type: ${widget.channel.channelId.runtimeType})');
+      print(
+          'Project Name: "${_nameProjectController.text}" (Length: ${_nameProjectController.text.length})');
+      print(
+          'Description: "${_descriptionController.text}" (Length: ${_descriptionController.text.length})');
       print('End Date: ${_selectedEndDate!.toIso8601String().split('.')[0]}');
-      print('Member IDs: $memberIds');
+      print('Member IDs: $memberIds (Type: ${memberIds.runtimeType})');
+      print('Member IDs Length: ${memberIds.length}');
       print(
           'Selected Members: ${_selectedMembers.map((m) => '${m.id}: ${m.fullname}').toList()}');
       print('============================');

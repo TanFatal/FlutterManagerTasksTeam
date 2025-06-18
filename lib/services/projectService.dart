@@ -21,7 +21,8 @@ class ProjectService {
       String description, DateTime endDate, List<int> members) async {
     final requestData = {
       "name": name,
-      "description": description,
+      "decription":
+          description, // Note: API might expect "decription" not "description"
       "endDate": endDate.toIso8601String().split('.')[0],
       "listUser": members
     };
@@ -35,23 +36,45 @@ class ProjectService {
     print('Request Data: $requestData');
     print('========================');
 
-    Response? response = await apiService.postData(endpoint, requestData);
+    try {
+      Response? response = await apiService.postData(endpoint, requestData);
 
-    print('Response Status Code: ${response?.statusCode}');
-    print('Response Data: ${response?.data}');
+      print('Response Status Code: ${response?.statusCode}');
+      print('Response Data: ${response?.data}');
 
-    if (response != null && response.statusCode == 200) {
-      // Chuyển đổi response.body thành JSON
-      final Map<String, dynamic> jsonData = response.data;
+      if (response != null && response.statusCode == 200) {
+        // Chuyển đổi response.body thành JSON
+        final Map<String, dynamic> jsonData = response.data;
 
-      // Chuyển đổi JSON thành ProjectModel
-      ProjectModel newProject = ProjectModel.fromJson(jsonData);
-      print('Project created successfully!');
-      return newProject;
-    } else {
-      log("Tạo Project thất bại! Status: ${response?.statusCode}");
-      log("Error Response: ${response?.data}");
-      return null; // Trả về null thay vì false để đảm bảo kiểu dữ liệu nhất quán
+        // Chuyển đổi JSON thành ProjectModel
+        ProjectModel newProject = ProjectModel.fromJson(jsonData);
+        print('Project created successfully!');
+        return newProject;
+      } else {
+        log("Tạo Project thất bại! Status: ${response?.statusCode}");
+        log("Error Response: ${response?.data}");
+        return null;
+      }
+    } catch (e) {
+      log("API Exception caught: $e");
+
+      // Try to extract error details from DioException
+      if (e is DioException) {
+        log("DioException Type: ${e.type}");
+        log("DioException Status Code: ${e.response?.statusCode}");
+        log("DioException Response Data: ${e.response?.data}");
+        log("DioException Message: ${e.message}");
+
+        // Return the error details for debugging
+        if (e.response != null) {
+          print('=== 400 ERROR DETAILS ===');
+          print('Status: ${e.response!.statusCode}');
+          print('Headers: ${e.response!.headers}');
+          print('Data: ${e.response!.data}');
+          print('========================');
+        }
+      }
+      return null;
     }
   }
 
