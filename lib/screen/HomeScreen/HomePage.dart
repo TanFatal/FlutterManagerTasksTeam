@@ -90,11 +90,24 @@ class _HomePage extends State<HomePage> {
   // }
 
   Future<List<TaskModel>> _getAllTaskByUserId() async {
+    // Get access token properly with await
+    final accessToken = await StorageService.getAccessToken();
+    final refreshToken = await StorageService.getRefreshToken();
+
+    log("=== BEFORE API CALL ===");
+    log("Access Token: ${accessToken != null ? '${accessToken.substring(0, 20)}...' : 'No token found'}");
+    log("Refresh Token: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'No refresh token'}");
+    log("========================");
+
     final data = await TaskApiService().getAllTaskByCurrentUser();
+
+    log("=== AFTER API CALL ===");
+    log("Tasks received: ${data.length} items");
+    log("=======================");
+
     if (mounted) {
       setState(() {
         tasks = data;
-        log("đây là" + tasks.toString());
       });
 
       if (tasks.isEmpty) {
