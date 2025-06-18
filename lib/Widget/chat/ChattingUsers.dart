@@ -10,7 +10,8 @@ import 'package:testflutter/screen/chat/ChatScreen.dart';
 
 class ChattingUsersWidget extends StatefulWidget {
   final RoomChatPreviewModel preview;
-  const ChattingUsersWidget({super.key, required this.preview});
+  final VoidCallback? onReturn;
+  const ChattingUsersWidget({super.key, required this.preview, this.onReturn});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -113,8 +114,8 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
           style: const TextStyle(color: Colors.grey)),
       trailing:
           Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(
@@ -122,6 +123,11 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
             ),
           ),
         );
+
+        // Call refresh callback when returning from ChatScreen
+        if (widget.onReturn != null) {
+          widget.onReturn!();
+        }
       },
     );
   }

@@ -32,7 +32,7 @@ class MessageModel extends Equatable {
         messageId: json['messageId'] ?? 0,
         senderId: json['senderId'] ?? 0,
         content: json['content'] ?? '',
-        type: json['content'] ?? '',
+        type: json['type'] ?? 'text',
         timestamp: DateTime.parse(
           json['timestamp'] ?? DateTime.now().toIso8601String(),
         ),

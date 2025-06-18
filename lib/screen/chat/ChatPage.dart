@@ -28,6 +28,12 @@ class _ChatPage extends State<ChatPage>
     _previewFuture = _loadPreviews();
   }
 
+  void _refreshPreviews() {
+    setState(() {
+      _previewFuture = _loadPreviews();
+    });
+  }
+
   Future<List<RoomChatPreviewModel>> _loadPreviews() async {
     final rooms = await _roomChatService
         .getAllRoomChatByCurrentUser(UserSession.currentUser!.id);
@@ -76,7 +82,10 @@ class _ChatPage extends State<ChatPage>
 
           return ListView.builder(
             itemCount: previews.length,
-            itemBuilder: (_, i) => ChattingUsersWidget(preview: previews[i]),
+            itemBuilder: (_, i) => ChattingUsersWidget(
+              preview: previews[i],
+              onReturn: _refreshPreviews,
+            ),
           );
         },
       ),

@@ -240,6 +240,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final isCurrentUser = _isCurrentUser(message.senderId);
     final time = _formatMessageTime(message.timestamp);
 
+    // Debug logging
+    log('Message type: ${message.type}, content: ${message.content.substring(0, message.content.length > 50 ? 50 : message.content.length)}...');
+
     if (isCurrentUser) {
       // Current user message - align right, no avatar
       return Align(
@@ -257,7 +260,7 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (message.type == 'img' && _isValidImageUrl(message.content))
+              if (message.type == 'image' && _isValidImageUrl(message.content))
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
@@ -383,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (message.type == 'img' &&
+                          if (message.type == 'image' &&
                               _isValidImageUrl(message.content))
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
@@ -610,7 +613,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (imageUrl != null) {
           log('✅ Image uploaded successfully: $imageUrl');
           // Send image message with type 'img'
-          await _sendMessage(imageUrl, 'img');
+          await _sendMessage(imageUrl, 'image');
         } else {
           log('❌ Failed to upload image');
           if (mounted) {
