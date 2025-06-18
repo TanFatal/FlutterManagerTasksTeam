@@ -64,18 +64,36 @@ class _ChannelScreen extends State<ChannelScreen> {
     }
   }
 
-  // Show date picker
+  // Show date and time picker
   Future<void> _selectEndDate() async {
-    final DateTime? picked = await showDatePicker(
+    // First pick date
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (picked != null && picked != _selectedEndDate) {
-      setState(() {
-        _selectedEndDate = picked;
-      });
+
+    if (pickedDate != null) {
+      // Then pick time
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        final DateTime selectedDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        setState(() {
+          _selectedEndDate = selectedDateTime;
+        });
+      }
     }
   }
 
@@ -145,7 +163,7 @@ class _ChannelScreen extends State<ChannelScreen> {
 
     if (_selectedEndDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select an end date")),
+        const SnackBar(content: Text("Please select an end date and time")),
       );
       return;
     }
@@ -296,8 +314,8 @@ class _ChannelScreen extends State<ChannelScreen> {
                         children: [
                           Text(
                             _selectedEndDate == null
-                                ? 'Select End Date'
-                                : DateFormat('dd/MM/yyyy')
+                                ? 'Select End Date & Time'
+                                : DateFormat('dd/MM/yyyy HH:mm')
                                     .format(_selectedEndDate!),
                             style: TextStyle(
                               color: _selectedEndDate == null

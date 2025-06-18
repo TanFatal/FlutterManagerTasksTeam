@@ -18,12 +18,12 @@ class ProjectService {
   //   init();
   // }
   Future<ProjectModel?> createProject(int channelId, String name,
-      String decription, DateTime endDate, List<int> members) async {
+      String description, DateTime endDate, List<int> members) async {
     Response? response = await apiService.postData(
         baseUrl + ApiConfig.project + "/channelID/" + channelId.toString(), {
       "name": name,
-      "description": decription,
-      "endDate": endDate.toIso8601String(),
+      "description": description,
+      "endDate": endDate.toIso8601String().split('.')[0],
       "listUser": members
     });
 
