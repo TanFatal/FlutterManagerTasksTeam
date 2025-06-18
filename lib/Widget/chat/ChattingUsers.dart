@@ -34,6 +34,26 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
     return rainbowColors[index];
   }
 
+  // Check if URL is valid for image loading
+  bool _isValidImageUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+
+    try {
+      final uri = Uri.tryParse(url);
+      if (uri == null || !uri.hasAbsolutePath) return false;
+
+      // Check if it's a valid HTTP/HTTPS URL
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      log('Invalid URL: $url, Error: $e');
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final room = widget.preview.roomChat;
@@ -51,7 +71,12 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
 
     // Hiển thị nội dung tin nhắn hoặc thông báo "Không có tin nhắn"
     final content = msg.content.isNotEmpty
-        ? (msg.content.startsWith('https://firebasestorage')
+        ? (msg.content.startsWith('http') &&
+                (msg.content.contains('.jpg') ||
+                    msg.content.contains('.jpeg') ||
+                    msg.content.contains('.png') ||
+                    msg.content.contains('.gif') ||
+                    msg.content.contains('cloudinary.com'))
             ? 'Sent an image'
             : msg.content)
         : '';
@@ -64,12 +89,17 @@ class _ChattingUsersWidgetState extends State<ChattingUsersWidget> {
       leading: CircleAvatar(
         radius: 26,
         backgroundColor:
-            room.urlImages == null ? Colors.blue : Colors.transparent,
-        backgroundImage: room.urlImages != null &&
-                Uri.tryParse(room.urlImages!)?.hasAbsolutePath == true
+            _isValidImageUrl(room.urlImages) ? Colors.transparent : Colors.blue,
+        backgroundImage: _isValidImageUrl(room.urlImages)
             ? NetworkImage(room.urlImages!)
-            : const NetworkImage('https://i.pravatar.cc/150?img=3'),
-        child: room.urlImages == null
+            : null,
+        onBackgroundImageError: _isValidImageUrl(room.urlImages)
+            ? (exception, stackTrace) {
+                log('Failed to load image: ${room.urlImages}');
+                // Fallback will be handled by child widget
+              }
+            : null,
+        child: !_isValidImageUrl(room.urlImages)
             ? const Icon(Icons.groups, color: Colors.white)
             : null,
       ),
