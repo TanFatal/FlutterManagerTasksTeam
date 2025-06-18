@@ -54,9 +54,31 @@ class _HomePage extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
     _loadProjects();
     //_getAllChannel();
     _getAllTaskByUserId();
+  }
+
+  // Check if user is logged in
+  Future<void> _checkLoginStatus() async {
+    final accessToken = await StorageService.getAccessToken();
+    final refreshToken = await StorageService.getRefreshToken();
+
+    log("=== LOGIN STATUS CHECK ===");
+    log("Access Token exists: ${accessToken != null}");
+    log("Refresh Token exists: ${refreshToken != null}");
+
+    if (accessToken == null || refreshToken == null) {
+      log("❌ USER NOT LOGGED IN - Redirecting to login...");
+      // Optionally redirect to login screen
+      // Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      log("✅ USER IS LOGGED IN");
+      log("Access Token: ${accessToken.substring(0, 20)}...");
+      log("Refresh Token: ${refreshToken.substring(0, 20)}...");
+    }
+    log("==========================");
   }
 
   void _loadProjects() async {

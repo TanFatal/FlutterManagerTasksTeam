@@ -13,21 +13,40 @@ class AuthApiService {
   AuthApiService();
 
   Future<bool> loginUser(String email, String password) async {
+    log("=== LOGIN ATTEMPT ===");
+    log("Email: $email");
+    log("Endpoint: ${baseUrl + ApiConfig.emailLogin}");
+
     var response = await apiService.postData(baseUrl + ApiConfig.emailLogin, {
       'username': email,
       'password': password,
     });
+
+    log("Login Response Status: ${response?.statusCode}");
+    log("Login Response Data: ${response?.data}");
+
     if (response != null && response.statusCode == 200) {
       String accCessToken = response.data['accessToken'];
       String refreshToken = response.data['refreshToken'];
+
+      log("=== SAVING TOKENS ===");
+      log("Access Token: ${accCessToken.substring(0, 20)}...");
+      log("Refresh Token: ${refreshToken.substring(0, 20)}...");
+
       await StorageService.saveTokens(accCessToken, refreshToken);
-      log("accessToken: $accCessToken /n" +
-          " và /n"
-              "refreshToken: $refreshToken");
+
+      // Verify tokens were saved
+      final savedAccessToken = await StorageService.getAccessToken();
+      final savedRefreshToken = await StorageService.getRefreshToken();
+
+      log("=== VERIFICATION ===");
+      log("Saved Access Token: ${savedAccessToken != null ? '${savedAccessToken.substring(0, 20)}...' : 'FAILED TO SAVE'}");
+      log("Saved Refresh Token: ${savedRefreshToken != null ? '${savedRefreshToken.substring(0, 20)}...' : 'FAILED TO SAVE'}");
+      log("====================");
+
       return true;
     } else {
-      log("Đăng nhập thất bại");
-
+      log("❌ Đăng nhập thất bại - Status: ${response?.statusCode}");
       return false;
     }
   }
