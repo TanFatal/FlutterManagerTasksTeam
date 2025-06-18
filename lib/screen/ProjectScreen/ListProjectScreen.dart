@@ -85,33 +85,109 @@ class _ListProjectScreenState extends State<ListProjectScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 4.0),
                   decoration: BoxDecoration(
-                    color: Colors.white, // Màu nền dropdown
-                    borderRadius:
-                        BorderRadius.circular(16.0), // Bo tròn dropdown
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0),
                     border: Border.all(
-                      color: Colors.grey.shade300, // Đường viền của dropdown
-                      width: 1.0,
+                      color: Colors.blue.shade300,
+                      width: 1.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: DropdownButton<String>(
                     value: _selectedGroupId,
-                    hint: const Text('All group'),
+                    hint: const Text(
+                      'Select Channel',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.blue,
+                      size: 28,
+                    ),
+                    iconSize: 28,
+                    elevation: 8,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    underline: Container(), // Remove default underline
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedGroupId = newValue!;
-                        _fetchProjects(newValue == 'All'
-                            ? null
-                            : int.parse(newValue)); // Đổi sang `channelId`
+                        _fetchProjects(
+                            newValue == 'All' ? null : int.parse(newValue));
                       });
                     },
                     items: [
                       DropdownMenuItem(
-                          value: "All", child: Text("All Channels")),
+                        value: "All",
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.select_all_rounded,
+                                color: Colors.blue.shade600,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                "All Channels",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       ...channels.map((channel) => DropdownMenuItem<String>(
-                            value:
-                                channel.channelId.toString(), // Sửa lỗi ở đây
-                            child: Text(channel.channelName),
+                            value: channel.channelId.toString(),
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.tag_rounded,
+                                    color: Colors.blue.shade400,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      channel.channelName,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ))
                     ],
                   ),

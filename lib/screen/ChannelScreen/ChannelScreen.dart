@@ -177,22 +177,6 @@ class _ChannelScreen extends State<ChannelScreen> {
 
     try {
       final memberIds = _selectedMembers.map((member) => member.id).toList();
-
-      // Debug logging
-      print('=== CREATE PROJECT DEBUG ===');
-      print(
-          'Channel ID: ${widget.channel.channelId} (Type: ${widget.channel.channelId.runtimeType})');
-      print(
-          'Project Name: "${_nameProjectController.text}" (Length: ${_nameProjectController.text.length})');
-      print(
-          'Description: "${_descriptionController.text}" (Length: ${_descriptionController.text.length})');
-      print('End Date: ${_selectedEndDate!.toIso8601String().split('.')[0]}');
-      print('Member IDs: $memberIds (Type: ${memberIds.runtimeType})');
-      print('Member IDs Length: ${memberIds.length}');
-      print(
-          'Selected Members: ${_selectedMembers.map((m) => '${m.id}: ${m.fullname}').toList()}');
-      print('============================');
-
       final project = await _projectService.createProject(
         widget.channel.channelId,
         _nameProjectController.text,
@@ -250,156 +234,162 @@ class _ChannelScreen extends State<ChannelScreen> {
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15)),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'New Project',
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue),
-                      ),
-                      const SizedBox(height: 30),
-                      TextField(
-                        controller: _nameProjectController,
-                        decoration: InputDecoration(
-                          labelStyle: const TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: const BorderSide(color: Colors.blue),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide:
-                                const BorderSide(color: Colors.blue, width: 2),
-                          ),
-                          hintText: 'Name Project',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          suffixIcon: const Icon(Icons.star_outline,
-                              color: Colors.blueAccent),
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 20.0, horizontal: 20.0),
+                child: GestureDetector(
+                  onTap: () {
+                    // Hide keyboard when tapping outside
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'New Project',
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _descriptionController,
-                        decoration: InputDecoration(
-                          labelStyle: const TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(height: 30),
+                        TextField(
+                          controller: _nameProjectController,
+                          decoration: InputDecoration(
+                            labelStyle: const TextStyle(
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: const BorderSide(color: Colors.blue),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: const BorderSide(
+                                  color: Colors.blue, width: 2),
+                            ),
+                            hintText: 'Name Project',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            suffixIcon: const Icon(Icons.star_outline,
+                                color: Colors.blueAccent),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 20.0, horizontal: 20.0),
                           ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: const BorderSide(color: Colors.blue),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide:
-                                const BorderSide(color: Colors.blue, width: 2),
-                          ),
-                          hintText: 'Description',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 20.0, horizontal: 20.0),
                         ),
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _descriptionController,
+                          decoration: InputDecoration(
+                            labelStyle: const TextStyle(
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: const BorderSide(color: Colors.blue),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: const BorderSide(
+                                  color: Colors.blue, width: 2),
+                            ),
+                            hintText: 'Description',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 20.0, horizontal: 20.0),
+                          ),
+                          maxLines: 5,
+                        ),
+                        const SizedBox(height: 16),
 
-                      // End Date Selection
-                      InkWell(
-                        onTap: () async {
-                          await _selectEndDate();
-                          setModalState(() {}); // Update modal state
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20.0, horizontal: 20.0),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue),
-                            borderRadius: BorderRadius.circular(15),
-                            color: Colors.white,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _selectedEndDate == null
-                                    ? 'Select End Date & Time'
-                                    : DateFormat('dd/MM/yyyy HH:mm')
-                                        .format(_selectedEndDate!),
-                                style: TextStyle(
-                                  color: _selectedEndDate == null
-                                      ? Colors.grey
-                                      : Colors.black,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const Icon(Icons.calendar_today,
-                                  color: Colors.blueAccent),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Member Selection
-                      InkWell(
-                        onTap: () async {
-                          await _showMemberSelectionDialog();
-                          setModalState(() {}); // Update modal state
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20.0, horizontal: 20.0),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue),
-                            borderRadius: BorderRadius.circular(15),
-                            color: Colors.white,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _selectedMembers.isEmpty
-                                      ? 'Select Members'
-                                      : '${_selectedMembers.length} member(s) selected',
+                        // End Date Selection
+                        InkWell(
+                          onTap: () async {
+                            await _selectEndDate();
+                            setModalState(() {}); // Update modal state
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 20.0, horizontal: 20.0),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue),
+                              borderRadius: BorderRadius.circular(15),
+                              color: Colors.white,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _selectedEndDate == null
+                                      ? 'Select End Date & Time'
+                                      : DateFormat('dd/MM/yyyy HH:mm')
+                                          .format(_selectedEndDate!),
                                   style: TextStyle(
-                                    color: _selectedMembers.isEmpty
+                                    color: _selectedEndDate == null
                                         ? Colors.grey
                                         : Colors.black,
                                     fontSize: 16,
                                   ),
                                 ),
-                              ),
-                              const Icon(Icons.people,
-                                  color: Colors.blueAccent),
-                            ],
+                                const Icon(Icons.calendar_today,
+                                    color: Colors.blueAccent),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      ElevatedButton(
-                        onPressed: _createProject,
-                        child: const Text('Create New Project'),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.blue, // Màu chữ
+                        // Member Selection
+                        InkWell(
+                          onTap: () async {
+                            await _showMemberSelectionDialog();
+                            setModalState(() {}); // Update modal state
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 20.0, horizontal: 20.0),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue),
+                              borderRadius: BorderRadius.circular(15),
+                              color: Colors.white,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedMembers.isEmpty
+                                        ? 'Select Members'
+                                        : '${_selectedMembers.length} member(s) selected',
+                                    style: TextStyle(
+                                      color: _selectedMembers.isEmpty
+                                          ? Colors.grey
+                                          : Colors.black,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.people,
+                                    color: Colors.blueAccent),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+
+                        ElevatedButton(
+                          onPressed: _createProject,
+                          child: const Text('Create New Project'),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.blue, // Màu chữ
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
