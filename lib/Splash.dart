@@ -25,48 +25,70 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final token = await StorageService.getAccessToken();
+    try {
+      log("=== SPLASH SCREEN CHECK ===");
 
-    log("Token: $token");
-    if (token != null) {
+      // Kiểm tra refreshToken trước
       final refreshToken = await StorageService.getRefreshToken();
-      final payload = JwtAndSession().decodeJWT(token);
-      final int exp = payload['exp'];
+      log("Refresh Token: ${refreshToken != null ? 'Found' : 'Not found'}");
 
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      log(exp.toString() + "và " + now.toString());
-      if (exp < now) {
-        log("Token đã hết hạn! Đang làm mới...");
-        final newToken = await AuthApiService().RefreshLogin(refreshToken!);
-
-        await StorageService.saveTokens(
-            newToken!, refreshToken); // Lưu token mới vào storage
+      if (refreshToken == null) {
+        _navigateToLogin();
+        return;
       }
 
-      // try {
-      //   // Nếu có token, khởi tạo phiên người dùng
-      //   await JwtAndSession().initUserSession();
-      //   // Gọi API kiểm tra token (ví dụ /api/user/me hoặc bất kỳ API cần auth)
-      //   final response =
-      //       await ApiService().getData(ApiConfig.baseUrl + ApiConfig.channel);
-      //   if (response!.statusCode == 200) {
-      //     // Nếu hợp lệ, vào Home
-      //     Navigator.pushReplacement(
-      //       context,
-      //       MaterialPageRoute(builder: (_) => const Mainscreen()),
-      //     );
-      //     return;
-      //   }
-      // } catch (e) {
-      //   // Token hết hạn, xử lý sau
-      // }
-    }
+      // Có refreshToken → Dùng để lấy accessToken mới
+      log("🔄 Using refresh token to get new access token...");
+      try {
+        final newAccessToken =
+            await AuthApiService().RefreshLogin(refreshToken);
 
-    // Nếu không có token hoặc lỗi → quay về login
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_context) => const LoginScreen()),
-    );
+        if (newAccessToken != null) {
+          // Lưu token mới
+          await StorageService.saveTokens(newAccessToken, refreshToken);
+          log("✅ Access token refreshed successfully");
+
+          // Khởi tạo user session
+          await JwtAndSession().initUserSession();
+
+          // Vào main screen
+          _navigateToMain();
+          return;
+        } else {
+          log("❌ Refresh token failed - redirecting to login");
+          await StorageService.clearTokens();
+          _navigateToLogin();
+          return;
+        }
+      } catch (refreshError) {
+        log("❌ Refresh token error: $refreshError");
+        await StorageService.clearTokens();
+        _navigateToLogin();
+        return;
+      }
+    } catch (e) {
+      log("❌ Error in splash: $e");
+      await StorageService.clearTokens();
+      _navigateToLogin();
+    }
+  }
+
+  void _navigateToLogin() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
+  }
+
+  void _navigateToMain() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Mainscreen()),
+      );
+    }
   }
 
   @override

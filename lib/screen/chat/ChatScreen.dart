@@ -611,11 +611,10 @@ class _ChatScreenState extends State<ChatScreen> {
         final imageUrl = await _cloudinaryService.uploadImage(imageFile);
 
         if (imageUrl != null) {
-          log('✅ Image uploaded successfully: $imageUrl');
           // Send image message with type 'img'
           await _sendMessage(imageUrl, 'image');
         } else {
-          log('❌ Failed to upload image');
+         
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
