@@ -6,7 +6,7 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:testflutter/Widget/avatar/InitialsAvatar.dart';
 import 'package:testflutter/models/ProjectModel.dart';
 import 'package:testflutter/models/UserSession.dart';
-import 'package:testflutter/screen/ProfileCreen/DetailProjectScreen.dart';
+import 'package:testflutter/screen/ProjectScreen/DetailProjectScreen.dart';
 import 'package:testflutter/services/auth_api_service.dart';
 
 class ProjectWidget extends StatelessWidget {

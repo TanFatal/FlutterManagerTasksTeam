@@ -4,17 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import 'package:testflutter/services/storage/storage_service.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class AuthApiService extends DioService {
-  @override
+class AuthApiService {
   String get baseUrl => ApiConfig.baseUrl;
   final ApiService apiService = ApiService();
   final StorageService secureStorage = StorageService();
 
-  AuthApiService() {
-    init();
-  }
+  AuthApiService();
 
   Future<bool> loginUser(String email, String password) async {
     var response = await apiService.postData(baseUrl + ApiConfig.emailLogin, {
@@ -50,6 +46,20 @@ class AuthApiService extends DioService {
     } else {
       log("Đăng nhập thất bại");
       return null;
+    }
+  }
+
+  Future<String> ChangeAvatar(String url) async {
+    var response =
+        await apiService.postData(baseUrl + ApiConfig.users + "/changeAvatar", {
+      'url': url,
+    });
+    if (response != null && response.statusCode == 200) {
+      String accCessToken = response.data['profilePictureUrl'];
+      return accCessToken;
+    } else {
+      log("Thây đổi ảnh thất bại");
+      return "Thây đổi ảnh thất bại";
     }
   }
 

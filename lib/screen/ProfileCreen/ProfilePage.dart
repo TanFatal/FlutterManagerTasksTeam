@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:testflutter/config/clouddinaryConfig.dart';
 import 'package:testflutter/models/UserSession.dart';
+import 'package:testflutter/screen/ProfileCreen/AvatarPreview.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -9,7 +14,7 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          const Expanded(flex: 1, child: _TopPortion()),
+          Expanded(flex: 1, child: _TopPortion()),
           Expanded(
             flex: 3,
             child: Padding(
@@ -120,10 +125,35 @@ class ProfileInfoItem {
   const ProfileInfoItem(this.title, this.value);
 }
 
-class _TopPortion extends StatelessWidget {
-  const _TopPortion();
-
+class _TopPortion extends StatefulWidget {
   @override
+  State<_TopPortion> createState() => _TopPortionState();
+}
+
+class _TopPortionState extends State<_TopPortion> {
+  final ImagePicker _picker = ImagePicker();
+  final cloudinary = CloudinaryService();
+
+  get newUrl => null;
+  void _changeAvatar() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    final File image = File(pickedFile.path);
+
+    // Mở trang preview
+    final isSaved = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AvatarPreviewPage(imageFile: image),
+      ),
+    );
+
+    if (isSaved == true) {
+      setState(() {}); // Cập nhật giao diện nếu đã lưu thành công
+    }
+  }
+
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
@@ -190,8 +220,8 @@ class _TopPortion extends StatelessWidget {
                     image: DecorationImage(
                       fit: BoxFit.cover,
                       image: NetworkImage(
-                        UserSession.currentUser?.url.isNotEmpty == true
-                            ? UserSession.currentUser!.url
+                        UserSession.currentUser?.urlImg.isNotEmpty == true
+                            ? UserSession.currentUser!.urlImg
                             : 'https://i.pravatar.cc/150?img=3',
                       ),
                     ),
@@ -200,14 +230,28 @@ class _TopPortion extends StatelessWidget {
                 Positioned(
                   bottom: 0,
                   right: 0,
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    child: Container(
-                      margin: const EdgeInsets.all(8.0),
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Thêm xử lý khi người dùng bấm vào để chọn ảnh mới
+                      print("Đổi ảnh đại diện");
+                      _changeAvatar();
+                      // Ví dụ: gọi showModalBottomSheet hoặc mở ImagePicker
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor:
+                          Theme.of(context).scaffoldBackgroundColor,
+                      child: Container(
+                        margin: const EdgeInsets.all(4.0),
+                        decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 120, 181, 122),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt, // Biểu tượng "thay đổi"
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),

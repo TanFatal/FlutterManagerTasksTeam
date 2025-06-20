@@ -23,7 +23,11 @@ class InitialsAvatar extends StatelessWidget {
           initials = ""; // Có thể hiển thị ký tự hoặc vòng tròn loading nếu cần
         } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           // Nếu dữ liệu đã có và không rỗng, tạo chữ cái đầu
-          initials = snapshot.data!.split(' ').take(2).map((word) => word[0].toUpperCase()).join('');
+          initials = snapshot.data!
+              .split(' ')
+              .take(2)
+              .map((word) => word[0].toUpperCase())
+              .join('');
         }
 
         return Padding(
@@ -40,7 +44,7 @@ class InitialsAvatar extends StatelessWidget {
                 initials,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: size/2,
+                  fontSize: size / 2,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -51,7 +55,6 @@ class InitialsAvatar extends StatelessWidget {
     );
   }
 }
-
 
 class PersonalInitialsAvatar extends StatelessWidget {
   final String name; // String chứa tên

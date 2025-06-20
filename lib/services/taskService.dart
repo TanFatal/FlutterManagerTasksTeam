@@ -4,10 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:testflutter/models/TaskModel.dart';
 import 'package:testflutter/services/storage/ApiService.dart';
 import '../config/api_config.dart';
-import 'dio_service.dart';
 
-class TaskApiService extends DioService {
-  @override
+class TaskApiService {
   String get baseUrl => ApiConfig.baseUrl;
 
   final ApiService apiService = ApiService();
@@ -16,7 +14,7 @@ class TaskApiService extends DioService {
   Future<List<TaskModel>> getAllTaskByCurrentUser() async {
     try {
       Response? response = await apiService.getData(baseUrl + ApiConfig.task);
-
+      log("đang lấy task");
       if (response != null && response.statusCode == 200) {
         final List<dynamic> jsonData = response.data;
         List<TaskModel> listTask = jsonData.map((item) {

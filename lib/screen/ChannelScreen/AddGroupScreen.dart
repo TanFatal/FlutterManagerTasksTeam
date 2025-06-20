@@ -1,11 +1,6 @@
-// ignore_for_file: avoid_print, file_names, use_build_context_synchronously, curly_braces_in_flow_control_structures
-
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:testflutter/models/ChannelModel.dart';
 import 'package:testflutter/models/UserSession.dart';
-import 'package:testflutter/screen/ChannelScreen/NewMemberWidget.dart';
 import 'package:testflutter/services/channel_api_service.dart';
 
 class AddGroupScreen extends StatefulWidget {
